@@ -1,0 +1,50 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans:wght@300;400;500;600;700&family=Poppins:wght@400;500;600;700;800&family=Roboto:wght@300;400;500;600;700&family=Open+Sans:wght@300;400;500;600;700&display=swap');
+
+@import 'tailwindcss';
+
+@theme {
+    --font-sans: "Noto Sans", "Inter", sans-serif;
+    --color-primary: #2557a7;
+    /* Indeed Blue */
+    --color-primary-foreground: #ffffff;
+    --color-secondary: #f3f2f0;
+    /* Indeed Light Gray */
+    --color-background: #ffffff;
+    --color-foreground: #2d2d2d;
+    /* Indeed Dark Text */
+
+    --radius-lg: 0.5rem;
+    --radius-md: 0.375rem;
+    --radius-sm: 0.25rem;
+}
+
+@layer base {
+    body {
+        @apply font-sans bg-white text-gray-900 antialiased;
+    }
+
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+        @apply font-bold tracking-tight text-gray-900;
+    }
+}
+
+@layer utilities {
+    .animate-fade-in {
+        animation: fadeIn 0.5s ease-out forwards;
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+        }
+
+        to {
+            opacity: 1;
+        }
+    }
+}
