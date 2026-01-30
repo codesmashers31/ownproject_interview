@@ -17,13 +17,13 @@ console.log("Email Service: Using Gmail SMTP");
 const transporter = nodemailer.createTransport(transporterConfig);
 
 // Verify connection configuration on startup
-transporter.verify(function (error, success) {
-    if (error) {
-        console.error("Email Service Error: Connection verification failed.", error);
-    } else {
-        console.log("Email Service: Connected to Gmail SMTP");
-    }
-});
+// transporter.verify(function (error, success) {
+//     if (error) {
+//         console.error("Email Service Error: Connection verification failed.", error);
+//     } else {
+//         console.log("Email Service: Connected to Gmail SMTP");
+//     }
+// });
 
 export const sendEmail = async ({ to, subject, html }) => {
     try {
