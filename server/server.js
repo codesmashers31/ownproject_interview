@@ -44,6 +44,7 @@ const allowedOrigins = [
   "http://localhost:5173",
   "http://localhost:5174",
   "https://interviewmock.vercel.app",
+  "https://ownproject-interview.vercel.app", // Added new Vercel deployment
   process.env.CLIENT_URL,
 ].filter(Boolean);
 
