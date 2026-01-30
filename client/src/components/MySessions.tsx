@@ -1,10 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  Calendar,
   Video,
-  Clock,
-  CheckCircle,
   Download,
   FileText,
   User,
@@ -13,17 +10,19 @@ import {
   Briefcase,
   ChevronRight,
   Search,
-  Filter,
   LayoutDashboard,
   ListVideo,
   PieChart,
   Star,
-  MapPin,
-  Loader2,
   RefreshCw,
   Eye,
   Play,
-  Clock3
+  Clock3,
+  Bookmark,
+  Calendar,
+  CheckCircle,
+  Zap,
+  MapPin
 } from "lucide-react";
 import { toast } from "sonner";
 import Navigation from "./Navigation";
@@ -50,6 +49,24 @@ type Session = {
   startTime?: string;
   endTime?: string;
   category?: string;
+};
+
+type SavedExpert = {
+  id: string;
+  expertID: string;
+  name: string;
+  role: string;
+  company: string;
+  avatar: string;
+  rating: number;
+  reviews: number;
+  price: string;
+  location: string;
+  skills: string[];
+  experience: string;
+  responseTime: string;
+  totalAvailableSlots: number;
+  isVerified: boolean;
 };
 
 // --- Mock Data ---
@@ -80,10 +97,65 @@ const MySessions = () => {
   const { user } = useAuth();
   const [sessions, setSessions] = useState<Session[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeView, setActiveView] = useState<'overview' | 'sessions' | 'certifications' | 'reports'>('overview');
+  const [activeView, setActiveView] = useState<'overview' | 'sessions' | 'certifications' | 'reports' | 'saved'>('overview');
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [refreshing, setRefreshing] = useState(false);
+
+  // Saved Experts State
+  const [savedExperts, setSavedExperts] = useState<SavedExpert[]>([]);
+  const [savedLoading, setSavedLoading] = useState(false);
+
+  // Fetch Saved Experts
+  const fetchSavedExperts = async () => {
+    if (!user?.id) return;
+    setSavedLoading(true);
+    try {
+      const res = await axios.get("/api/user/saved-experts");
+      if (res.data?.data) {
+        const mapped = res.data.data.map((item: any) => {
+          const expert = item.expertId;
+          if (!expert) return null;
+
+          const cat = expert.personalInformation?.category || "IT";
+          let exp = "";
+          if (expert.professionalDetails?.totalExperience) exp = expert.professionalDetails.totalExperience === 1 ? "1 year" : `${expert.professionalDetails.totalExperience} years`;
+          // Fallback for experience (simplified for this view)
+          else exp = "Experienced";
+
+          return {
+            id: expert._id || expert.userId,
+            expertID: expert._id,
+            name: expert.personalInformation?.userName || "Expert",
+            role: expert.professionalDetails?.title || `Expert`,
+            company: expert.professionalDetails?.company || "Freelance",
+            avatar: getProfileImageUrl(expert.profileImage),
+            rating: expert.metrics?.avgRating || 0,
+            reviews: expert.metrics?.totalReviews || 0,
+            price: expert.price ? `₹${expert.price}` : "₹500",
+            location: expert.personalInformation?.city || "Online",
+            skills: ((expert.expertSkills || []).map((s: any) => s.skillName).slice(0, 3)) || [],
+            experience: exp,
+            responseTime: expert.metrics?.avgResponseTime ? `${Math.round(expert.metrics.avgResponseTime)}h` : "fast",
+            totalAvailableSlots: 5, // Mock or calc
+            isVerified: expert.status === "Active"
+          };
+        }).filter(Boolean);
+        setSavedExperts(mapped);
+      }
+    } catch (e) {
+      console.error("Failed to fetch saved experts", e);
+    } finally {
+      setSavedLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeView === 'saved') {
+      fetchSavedExperts();
+    }
+  }, [activeView, user?.id]);
+
 
   // Stats State
   const [stats, setStats] = useState({
@@ -262,6 +334,19 @@ const MySessions = () => {
               <NavItem id="sessions" label="All Sessions" icon={<ListVideo className="w-4 h-4" />} />
               <NavItem id="certifications" label="Certifications" icon={<Award className="w-4 h-4" />} />
               <NavItem id="reports" label="Performance & Reports" icon={<PieChart className="w-4 h-4" />} />
+
+              <div className="pt-2 border-t border-gray-100 mt-2">
+                <button
+                  onClick={() => setActiveView('saved')}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${activeView === 'saved'
+                    ? "bg-[#004fcb] text-white shadow-md shadow-blue-200"
+                    : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
+                    }`}
+                >
+                  <Bookmark className="w-4 h-4" />
+                  <span>Saved Experts</span>
+                </button>
+              </div>
             </div>
 
             {/* Mini Stats in Sidebar */}
@@ -440,6 +525,44 @@ const MySessions = () => {
                     </div>
                   </div>
                 </section>
+              </div>
+            )}
+
+            {/* VIEW: SAVED EXPERTS */}
+            {activeView === 'saved' && (
+              <div className="space-y-6 animate-fadeIn">
+                <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+                  <div className="flex items-center justify-between mb-6">
+                    <div>
+                      <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                        <Bookmark className="w-5 h-5 text-[#004fcb]" />
+                        Saved Experts
+                      </h2>
+                      <p className="text-sm text-gray-500 mt-1">Your shortlisted mentors and interviewers</p>
+                    </div>
+                  </div>
+
+                  {savedLoading ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {[1, 2, 3, 4].map(i => (
+                        <div key={i} className="h-48 bg-gray-50 rounded-xl animate-pulse border border-gray-100"></div>
+                      ))}
+                    </div>
+                  ) : savedExperts.length === 0 ? (
+                    <div className="text-center py-12 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+                      <Bookmark className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                      <h3 className="font-bold text-gray-900">No saved experts yet</h3>
+                      <p className="text-sm text-gray-500 mb-4">Start exploring experts and save them here.</p>
+                      <button onClick={() => navigate('/')} className="text-[#004fcb] font-bold text-sm hover:underline">Find Experts</button>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {savedExperts.map(expert => (
+                        <SavedExpertCard key={expert.id} expert={expert} onRefresh={fetchSavedExperts} />
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 
@@ -730,5 +853,84 @@ function Shield(props: any) {
   }
   .animate-fadeIn { animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
 `}</style>
+
+// Saved Expert Card Sub-component
+function SavedExpertCard({ expert, onRefresh }: { expert: SavedExpert, onRefresh: () => void }) {
+  const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
+
+  const handleUnsave = async (e: any) => {
+    e.stopPropagation();
+    try {
+      setLoading(true);
+      await axios.delete(`/api/user/saved-experts/${expert.expertID}`);
+      toast.success("Removed from saved list");
+      onRefresh();
+    } catch (error) {
+      toast.error("Failed to remove");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleBook = () => {
+    navigate(`/book-session`, {
+      state: {
+        profile: { ...expert, id: expert.expertID }, // Adapter for profile
+        expertId: expert.expertID
+      }
+    });
+  };
+
+  return (
+    <div className="bg-white border border-gray-200 rounded-xl p-4 hover:border-[#004fcb] transition-all shadow-sm group">
+      <div className="flex items-start gap-3 mb-3">
+        <img
+          src={expert.avatar}
+          alt={expert.name}
+          className="w-12 h-12 rounded-lg object-cover bg-gray-100"
+        />
+        <div className="flex-1 min-w-0">
+          <h3 className="font-bold text-gray-900 truncate">{expert.name}</h3>
+          <p className="text-xs text-gray-500 truncate">{expert.role} @ {expert.company}</p>
+          <div className="flex items-center gap-2 mt-1 text-xs text-gray-400">
+            <MapPin className="w-3 h-3" />
+            {expert.location}
+          </div>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-3 text-xs text-gray-500 mb-4 bg-gray-50 p-2 rounded-lg">
+        <div className="flex items-center gap-1">
+          <Star className="w-3 h-3 text-yellow-500 fill-current" />
+          <span className="font-bold text-gray-900">{expert.rating.toFixed(1)}</span>
+          <span>({expert.reviews})</span>
+        </div>
+        <div className="w-px h-3 bg-gray-300"></div>
+        <div className="flex items-center gap-1">
+          <Zap className="w-3 h-3 text-amber-500" />
+          <span>{expert.responseTime}</span>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-2">
+        <button
+          onClick={handleUnsave}
+          disabled={loading}
+          className="p-2 border border-gray-200 rounded-lg hover:bg-red-50 hover:text-red-600 hover:border-red-100 transition-colors text-green-600 bg-green-50 border-green-200"
+          title="Saved (Click to remove)"
+        >
+          {loading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
+        </button>
+        <button
+          onClick={handleBook}
+          className="flex-1 bg-[#004fcb] hover:bg-blue-700 text-white text-xs font-bold py-2 rounded-lg transition-colors"
+        >
+          Book Session
+        </button>
+      </div>
+    </div>
+  );
+}
 
 export default MySessions;

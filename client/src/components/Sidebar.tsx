@@ -274,8 +274,8 @@ const Sidebar = () => {
           <NavItem
             icon={Bookmark}
             label="Saved Experts"
-            path="/saved"
-            active={location.pathname === "/saved"}
+            path="/saved-experts"
+            active={location.pathname === "/saved-experts"}
           />
           <NavItem
             icon={Settings}

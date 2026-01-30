@@ -13,7 +13,7 @@ const mockStatus = [
 const InfoPanel = () => (
   <div className="space-y-4">
     {/* Mock Journey Card - Aligned with CoachSessionCard style */}
-    <Card className="rounded-lg border border-gray-300 shadow-sm hover:shadow-md hover:border-[#004fcb] transition-all duration-300 group bg-white">
+    <Card className="group bg-white rounded-xl border border-gray-200 hover:border-[#004fcb] transition-all duration-300 relative shadow-sm hover:shadow-lg hover:-translate-y-1">
       <CardHeader className="pb-3 px-5 pt-5">
         <div className="flex items-center gap-2 mb-1">
           <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
@@ -29,7 +29,7 @@ const InfoPanel = () => (
         {mockStatus.map((status, index) => (
           <button
             key={index}
-            className="w-full py-2.5 px-4 text-xs font-bold border border-gray-200 hover:border-[#004fcb] rounded bg-gray-50 hover:bg-white text-gray-700 hover:text-[#004fcb] transition-all duration-200 flex items-center gap-3 group/btn"
+            className="w-full py-2.5 px-4 text-xs font-bold border border-gray-200 hover:border-[#004fcb] rounded-lg bg-gray-50 hover:bg-white text-gray-700 hover:text-[#004fcb] transition-all duration-200 flex items-center gap-3 group/btn"
           >
             <div className="w-1.5 h-1.5 bg-gray-300 rounded-full group-hover/btn:bg-[#004fcb] transition-colors duration-200"></div>
             <span className="text-left flex-1">{status}</span>
@@ -39,7 +39,7 @@ const InfoPanel = () => (
     </Card>
 
     {/* Safety & Privacy Card */}
-    <Card className="rounded-lg border border-gray-300 shadow-sm hover:shadow-md hover:border-[#004fcb] transition-all duration-300 group bg-white">
+    <Card className="group bg-white rounded-xl border border-gray-200 hover:border-[#004fcb] transition-all duration-300 relative shadow-sm hover:shadow-lg hover:-translate-y-1">
       <CardContent className="p-5 flex items-start gap-4">
         <div className="p-2 bg-gray-100 rounded-lg group-hover:bg-blue-50 transition-colors">
           <Shield className="w-5 h-5 text-gray-700 group-hover:text-[#004fcb]" />
@@ -59,7 +59,7 @@ const InfoPanel = () => (
     </Card>
 
     {/* Pro-tip Card */}
-    <Card className="rounded-lg border border-gray-300 shadow-sm hover:shadow-md hover:border-[#004fcb] transition-all duration-300 group bg-white">
+    <Card className="group bg-white rounded-xl border border-gray-200 hover:border-[#004fcb] transition-all duration-300 relative shadow-sm hover:shadow-lg hover:-translate-y-1">
       <CardContent className="p-5 flex items-start gap-4">
         <div className="p-2 bg-gray-100 rounded-lg group-hover:bg-blue-50 transition-colors">
           <Lightbulb className="w-5 h-5 text-gray-700 group-hover:text-[#004fcb]" />
@@ -79,7 +79,7 @@ const InfoPanel = () => (
     </Card>
 
     {/* Resources Card */}
-    <Card className="rounded-lg border border-gray-300 shadow-sm hover:shadow-md hover:border-[#004fcb] transition-all duration-300 group bg-white">
+    <Card className="group bg-white rounded-xl border border-gray-200 hover:border-[#004fcb] transition-all duration-300 relative shadow-sm hover:shadow-lg hover:-translate-y-1">
       <CardContent className="p-5">
         <div className="flex items-center gap-3 mb-3">
           <div className="p-2 bg-gray-100 rounded-lg group-hover:bg-blue-50 transition-colors">
@@ -91,13 +91,13 @@ const InfoPanel = () => (
         <div className="grid grid-cols-2 gap-2">
           <a
             href="#"
-            className="px-3 py-2 rounded border border-gray-200 hover:border-[#004fcb] text-xs font-bold text-gray-700 hover:text-[#004fcb] text-center transition-all bg-gray-50 hover:bg-white"
+            className="px-3 py-2 rounded-lg border border-gray-200 hover:border-[#004fcb] text-xs font-bold text-gray-700 hover:text-[#004fcb] text-center transition-all bg-gray-50 hover:bg-white"
           >
             Questions
           </a>
           <a
             href="#"
-            className="px-3 py-2 rounded border border-gray-200 hover:border-[#004fcb] text-xs font-bold text-gray-700 hover:text-[#004fcb] text-center transition-all bg-gray-50 hover:bg-white"
+            className="px-3 py-2 rounded-lg border border-gray-200 hover:border-[#004fcb] text-xs font-bold text-gray-700 hover:text-[#004fcb] text-center transition-all bg-gray-50 hover:bg-white"
           >
             Guides
           </a>
@@ -110,7 +110,7 @@ const InfoPanel = () => (
 export const SkeletonInfoPanel = () => (
   <div className="space-y-4 animate-pulse">
     {/* Mock Journey Card Skeleton */}
-    <div className="rounded-lg border border-gray-200 bg-white h-64 p-5 space-y-4">
+    <div className="rounded-xl border border-gray-200 bg-white h-64 p-5 space-y-4">
       <div className="h-4 bg-gray-200 rounded w-1/3"></div>
       <div className="h-6 bg-gray-200 rounded w-3/4"></div>
       <div className="space-y-2">
@@ -121,7 +121,7 @@ export const SkeletonInfoPanel = () => (
     </div>
 
     {/* Safety Card Skeleton */}
-    <div className="rounded-lg border border-gray-200 bg-white h-24 p-5 flex gap-4">
+    <div className="rounded-xl border border-gray-200 bg-white h-24 p-5 flex gap-4">
       <div className="w-10 h-10 bg-gray-200 rounded-lg"></div>
       <div className="flex-1 space-y-2">
         <div className="h-4 bg-gray-200 rounded w-1/3"></div>

@@ -185,63 +185,76 @@ export default function SessionManagement() {
         <table className="w-full text-left text-sm">
           <thead className="bg-gray-50/50 border-b border-gray-100">
             <tr>
-              <th
-                className="px-6 py-4 font-medium text-gray-500 text-xs uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors group select-none"
-                onClick={() => setSortAsc(!sortAsc)}
-              >
-                <div className="flex items-center gap-2">
-                  Date & Time
-                  <ArrowUpDown className={`w-3 h-3 ${sortAsc ? 'text-blue-600' : 'text-gray-400'}`} />
-                </div>
-              </th>
-              <th className="px-6 py-4 font-medium text-gray-500 text-xs uppercase tracking-wider">Expert</th>
-              <th className="px-6 py-4 font-medium text-gray-500 text-xs uppercase tracking-wider">User</th>
-              <th className="px-6 py-4 font-medium text-gray-500 text-xs uppercase tracking-wider">Status</th>
-              <th className="px-6 py-4 font-medium text-gray-500 text-xs uppercase tracking-wider text-right">Amount</th>
+              <th className="px-6 py-4 font-medium text-gray-500 text-xs uppercase tracking-wider w-1/2">Booking Expert Details</th>
+              <th className="px-6 py-4 font-medium text-gray-500 text-xs uppercase tracking-wider w-1/2">Booked Details</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
             {loading ? (
-              // Skeleton Loading Rows (No Flickering Spinner)
+              // Skeleton Loading Rows
               Array.from({ length: 5 }).map((_, i) => <SkeletonRow key={i} />)
             ) : paginatedSessions.length > 0 ? (
               paginatedSessions.map((session) => (
                 <tr key={session._id} className="hover:bg-gray-50/50 transition-colors">
-                  <td className="px-6 py-4">
-                    <div className="flex flex-col">
-                      <span className="font-medium text-gray-900">
-                        {formatDate(session.startTime)}
-                      </span>
-                      <span className="text-xs text-gray-500 mt-1">
-                        {formatTime(session.startTime)} - {formatTime(session.endTime)}
-                      </span>
+                  {/* Booking Expert Details Column */}
+                  <td className="px-6 py-4 align-top">
+                    <div className="flex flex-col gap-2">
+                      <div className="flex flex-col">
+                        <span className="text-xs text-gray-500 uppercase tracking-wide">Expert Name</span>
+                        <span className="font-medium text-gray-900 text-base">{session.expertName || "Unknown"}</span>
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-xs text-gray-500 uppercase tracking-wide">Expert ID</span>
+                        <span className="text-sm text-gray-600 font-mono">{session.expertId}</span>
+                      </div>
                     </div>
                   </td>
-                  <td className="px-6 py-4">
-                    <div className="flex flex-col">
-                      <span className="font-medium text-gray-900">{session.expertName || "Unknown"}</span>
-                      <span className="text-xs text-gray-500 font-mono mt-0.5 truncate max-w-[100px]">{session.expertId.slice(-6)}...</span>
+
+                  {/* Booked Details Column */}
+                  <td className="px-6 py-4 align-top">
+                    <div className="flex flex-col gap-3">
+                      {/* Candidate Info */}
+                      <div className="flex flex-col">
+                        <span className="text-xs text-gray-500 uppercase tracking-wide">Candidate</span>
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium text-gray-900">{session.candidateName || "Unknown"}</span>
+                          <span className="text-xs text-gray-400 font-mono">({session.candidateId.slice(-6)}...)</span>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        {/* Date & Time */}
+                        <div className="flex flex-col">
+                          <span className="text-xs text-gray-500 uppercase tracking-wide">Schedule</span>
+                          <span className="text-sm text-gray-900 font-medium">
+                            {formatDate(session.startTime)}
+                          </span>
+                          <span className="text-xs text-gray-500">
+                            {formatTime(session.startTime)} - {formatTime(session.endTime)}
+                          </span>
+                        </div>
+
+                        {/* Price */}
+                        <div className="flex flex-col">
+                          <span className="text-xs text-gray-500 uppercase tracking-wide">Price</span>
+                          <span className="text-sm font-medium text-gray-900">₹{session.price?.toLocaleString() || 0}</span>
+                        </div>
+                      </div>
+
+                      {/* Status */}
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-xs text-gray-500 uppercase tracking-wide">Status:</span>
+                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(session.status)}`}>
+                          {session.status}
+                        </span>
+                      </div>
                     </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex flex-col">
-                      <span className="font-medium text-gray-900">{session.candidateName || "Unknown"}</span>
-                      <span className="text-xs text-gray-500 font-mono mt-0.5 truncate max-w-[100px]">{session.candidateId.slice(-6)}...</span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(session.status)}`}>
-                      {session.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <span className="font-medium text-gray-900">₹{session.price?.toLocaleString() || 0}</span>
                   </td>
                 </tr>
               ))
             ) : (
               <tr>
-                <td colSpan={5} className="py-20 text-center text-gray-500">
+                <td colSpan={2} className="py-20 text-center text-gray-500">
                   <p>No sessions found matching your criteria.</p>
                 </td>
               </tr>

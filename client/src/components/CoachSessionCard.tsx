@@ -47,6 +47,7 @@ interface Profile {
     weekly: Record<string, any[]>;
     breakDates: any[];
   };
+  totalAvailableSlots?: number;
 }
 
 // Save Button Component
@@ -97,14 +98,13 @@ const SaveButton = ({ expertId }: { expertId: string }) => {
   return (
     <button
       onClick={toggleSave}
-      className={`px-3 py-2 rounded-lg flex items-center gap-1.5 transition-all text-xs font-bold border ${isSaved
-          ? "bg-blue-50 text-[#004fcb] border-blue-100"
-          : "bg-white text-gray-500 border-gray-200 hover:border-[#004fcb] hover:text-[#004fcb]"
+      className={`h-9 w-9 rounded-full flex items-center justify-center transition-all border ${isSaved
+        ? "bg-green-50 text-green-600 border-green-200"
+        : "bg-white text-gray-400 border-gray-200 hover:border-[#004fcb] hover:text-[#004fcb]"
         }`}
-      title={isSaved ? "Remove from Saved" : "Save Expert"}
+      title={isSaved ? "Saved" : "Save Expert"}
     >
-      <Bookmark className={`w-3.5 h-3.5 ${isSaved ? "fill-current" : ""}`} />
-      {isSaved ? "Saved" : "Save"}
+      {isSaved ? <CheckCircle className="w-5 h-5" /> : <Bookmark className="w-4 h-4" />}
     </button>
   );
 }
@@ -162,21 +162,18 @@ const ProfileCard = ({ profile }: { profile: Profile }) => {
       </div>
 
       {/* Badges / Skills */}
-      <div className="flex flex-wrap gap-2 mb-4">
-        <span className="bg-blue-50 text-blue-700 text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wide">
+      <div className="flex flex-wrap items-center gap-2 mb-4 h-auto min-h-[28px]">
+        <span className="bg-blue-50 text-blue-700 text-[10px] font-bold px-2 py-1 rounded-md uppercase tracking-wide whitespace-nowrap">
           {profile.experience}
         </span>
-        {profile.skills.slice(0, 2).map((skill, idx) => (
-          <span
-            key={idx}
-            className="bg-gray-100 text-gray-600 text-[10px] font-bold px-2 py-1 rounded-md line-clamp-1 max-w-[100px]"
-          >
+        {profile.skills.slice(0, 4).map((skill, idx) => (
+          <span key={idx} className="text-gray-600 text-[10px] font-semibold border border-gray-200 px-1.5 py-0.5 rounded bg-gray-50 whitespace-nowrap">
             {skill}
           </span>
         ))}
-        {profile.skills.length > 2 && (
-          <span className="text-gray-400 text-[10px] flex items-center px-1 font-medium">
-            +{profile.skills.length - 2}
+        {profile.skills.length > 4 && (
+          <span className="text-gray-400 text-[10px] font-medium px-1">
+            +{profile.skills.length - 4}
           </span>
         )}
       </div>
@@ -193,6 +190,10 @@ const ProfileCard = ({ profile }: { profile: Profile }) => {
           <Zap className="w-3.5 h-3.5 text-amber-500" />
           <span>{profile.responseTime}</span>
         </div>
+        <div className="w-px h-3 bg-gray-300"></div>
+        <div className="flex items-center gap-1.5 font-bold text-[#004fcb]">
+          <span>{profile.totalAvailableSlots || 0} Slots Available</span>
+        </div>
       </div>
 
       {/* Footer: Price & Action Buttons */}
@@ -208,7 +209,7 @@ const ProfileCard = ({ profile }: { profile: Profile }) => {
           <SaveButton expertId={profile.expertID || profile.id} />
           <button
             onClick={handleBookNow}
-            className="px-4 py-2 bg-[#004fcb] hover:bg-[#003bb5] text-white text-xs font-bold rounded-lg transition-all shadow-md hover:shadow-lg transform active:scale-95"
+            className="px-4 py-2 bg-[#004fcb] hover:bg-[#003bb5] text-white text-[10px] font-bold rounded-lg transition-all shadow-md hover:shadow-lg transform active:scale-95"
           >
             Book Session
           </button>
@@ -240,6 +241,34 @@ const SkeletonCard = () => (
     </div>
   </div>
 );
+
+const countSlots = (availability: any) => {
+  if (!availability || !availability.weekly) return 0;
+  const { sessionDuration = 30, weekly } = availability;
+
+  let totalSlots = 0;
+
+  Object.values(weekly).forEach((daySlots: any) => {
+    if (Array.isArray(daySlots)) {
+      daySlots.forEach((slot: any) => {
+        if (slot.from && slot.to) {
+          const [startHour, startMin] = slot.from.split(':').map(Number);
+          const [endHour, endMin] = slot.to.split(':').map(Number);
+
+          const startMinutes = startHour * 60 + startMin;
+          const endMinutes = endHour * 60 + endMin;
+
+          const duration = endMinutes - startMinutes;
+          if (duration > 0) {
+            totalSlots += Math.floor(duration / sessionDuration);
+          }
+        }
+      });
+    }
+  });
+
+  return totalSlots;
+};
 
 // Helper functions (Unchanged)
 const calculateAge = (dob: string) => {
@@ -273,12 +302,7 @@ const getJobTitle = (pd: any, cat: string) => {
   return current?.title || pd?.title || `${cat} Expert`;
 };
 
-const calculatePrice = (exp: string, cat: string) => {
-  const base = { IT: 500, HR: 400, Business: 600, Design: 450, Marketing: 400, Finance: 550, AI: 700 }[cat] || 500;
-  if (exp.includes("Fresher") || exp.includes("Less")) return `₹${base - 100}/hr`;
-  const years = parseInt(exp.match(/(\d+)/)?.[1] || "0");
-  return `₹${base + (years >= 10 ? 300 : years >= 5 ? 200 : 100)}/hr`;
-};
+
 
 // Smart Ranking Algorithm
 const calculateRelevanceScore = (profile: Profile): number => {
@@ -373,16 +397,26 @@ export default function CoachSessionCard() {
 
       const p: Profile = {
         id: expert._id || expert.userId,
-        expertID: expert.userId,
+        expertID: expert._id || expert.userId,
         name: expert.personalInformation?.userName || "Expert",
         role: getJobTitle(expert.professionalDetails, cat),
         industry: expert.professionalDetails?.industry || cat,
         experience: exp,
-        skills: [...(expert.skillsAndExpertise?.domains || []), ...(expert.skillsAndExpertise?.tools || [])].slice(0, 5),
+        skills: (() => {
+          // 1. Try NEW expertSkills (Populated from backend)
+          if (expert.expertSkills && expert.expertSkills.length > 0) {
+            return expert.expertSkills
+              .filter((s: any) => s.isEnabled && s.skillName) // Only enabled skills
+              .map((s: any) => s.skillName);
+          }
+          // 2. Fallback to Legacy Skills
+          const legacySkills = [...(expert.skillsAndExpertise?.domains || []), ...(expert.skillsAndExpertise?.tools || [])];
+          return legacySkills;
+        })(),
         languages: expert.skillsAndExpertise?.languages || [],
         rating: expert.metrics?.avgRating || 0,
         reviews: expert.metrics?.totalReviews || 0,
-        price: expert.pricing?.hourlyRate ? `₹${expert.pricing.hourlyRate}/hr` : calculatePrice(exp, cat),
+        price: expert.price ? `₹${expert.price}` : "₹500",
         category: cat as Category,
         avatar: getProfileImageUrl(expert.profileImage),
         location: expert.personalInformation?.city || "Online",
@@ -392,7 +426,8 @@ export default function CoachSessionCard() {
         isVerified: expert.status === "Active",
         isFeatured: Math.random() > 0.8,
         availability: expert.availability,
-        company: getCurrentCompany(expert.professionalDetails, cat)
+        company: getCurrentCompany(expert.professionalDetails, cat),
+        totalAvailableSlots: countSlots(expert.availability)
       };
       return p;
     });
@@ -453,19 +488,19 @@ export default function CoachSessionCard() {
           </div>
         </div>
 
-        <div className="max-w-4xl mx-auto">
-          <div className="bg-white rounded-full border border-gray-300 shadow-md p-1.5 flex items-center transition-all focus-within:ring-2 focus-within:ring-[#004fcb] focus-within:border-[#004fcb]">
+        <div className="max-w-2xl mx-auto">
+          <div className="bg-white rounded-full border border-gray-300 shadow-md p-1 flex items-center transition-all focus-within:ring-2 focus-within:ring-[#004fcb] focus-within:border-[#004fcb]">
             <div className="pl-4 pr-2 text-gray-400">
-              <TrendingUp className="w-5 h-5" />
+              <TrendingUp className="w-4 h-4" />
             </div>
             <input
               type="text"
               placeholder="Search by name, role, company or skill..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="flex-grow py-3 bg-transparent text-gray-900 placeholder:text-gray-500 font-medium outline-none text-base w-full"
+              className="flex-grow py-2 bg-transparent text-gray-900 placeholder:text-gray-500 font-medium outline-none text-sm w-full"
             />
-            <button className="bg-[#004fcb] hover:bg-[#003bb5] text-white px-8 py-3 rounded-full font-bold transition-all shadow-sm whitespace-nowrap">
+            <button className="bg-[#004fcb] hover:bg-[#003bb5] text-white px-5 py-2 rounded-full font-bold transition-all shadow-sm whitespace-nowrap text-sm">
               Find Experts
             </button>
           </div>

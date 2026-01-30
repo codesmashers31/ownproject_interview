@@ -81,11 +81,17 @@ const BookSessionPage = () => {
   const [profile, setProfile] = useState<Profile | null>(existingProfile || null);
 
   const sessionPrice = overridePrice ? overridePrice : (profile?.price || 0);
-  const sessionDuration = overrideDuration ? overrideDuration : (profile?.availability?.sessionDuration || 60);
-
-  const [selectedLevel, setSelectedLevel] = useState<string>("Intermediate");
+  // Use Expert's Level & Duration
+  const [expertLevel, setExpertLevel] = useState(existingProfile?.level || "Intermediate");
+  const [sessionDuration, setSessionDuration] = useState<number>(existingProfile?.availability?.sessionDuration || 30);
   const [calculatedPrice, setCalculatedPrice] = useState<number>(0);
 
+  useEffect(() => {
+    if (existingProfile?.level) {
+      setExpertLevel(existingProfile.level);
+    }
+    // Default duration logic if needed
+  }, [existingProfile]);
   const [loading, setLoading] = useState(!existingProfile || !existingProfile.availability);
   const [errorValue, setErrorValue] = useState<string | null>(null);
 
@@ -128,7 +134,7 @@ const BookSessionPage = () => {
       try {
         const res = await axios.post("/api/pricing/calculate", {
           categoryId: profile.category,
-          level: selectedLevel,
+          level: expertLevel,
           duration: sessionDuration
         });
 
@@ -146,10 +152,14 @@ const BookSessionPage = () => {
     if (profile) {
       fetchPrice();
     }
-  }, [profile, selectedLevel, sessionDuration]);
+  }, [profile, expertLevel, sessionDuration]);
 
 
-  const [selectedDate, setSelectedDate] = useState(new Date().getDate() - 1);
+  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState(new Date().getDate() - 1); // This logic might need adj if switching months.
+  // Better: selectedDate as index is tricky with switching months. 
+  // Let's keep selectedDate as index of 'dates' array but reset it on month change.
+
   const [selectedSlot, setSelectedSlot] = useState<{ time: string; available: boolean } | null>(null);
   const [bookedSessions, setBookedSessions] = useState<any[]>([]);
   const [showMobileBooking, setShowMobileBooking] = useState(false);
@@ -229,12 +239,31 @@ const BookSessionPage = () => {
   }, [expertId]);
 
   const dates = useMemo(() => {
-    const today = new Date();
-    const year = today.getFullYear();
-    const month = today.getMonth();
+    const year = currentMonth.getFullYear();
+    const month = currentMonth.getMonth();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     return Array.from({ length: daysInMonth }, (_, i) => new Date(year, month, i + 1));
-  }, []);
+  }, [currentMonth]);
+
+  const nextMonth = () => {
+    setCurrentMonth(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
+    setSelectedDate(0);
+    setSelectedSlot(null);
+  };
+
+  const prevMonth = () => {
+    const now = new Date();
+    const prev = new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1);
+    // Allow going back only if it's same month or future
+    if (prev.getMonth() < now.getMonth() && prev.getFullYear() <= now.getFullYear()) {
+      setCurrentMonth(new Date()); // Reset to today
+    } else {
+      setCurrentMonth(prev);
+    }
+    setSelectedDate(0);
+    setSelectedSlot(null);
+  };
+
 
   const getAvailableSlots = (dateIndex: number) => {
     if (!profile?.availability) return [];
@@ -338,7 +367,7 @@ const BookSessionPage = () => {
           price: calculatedPrice || sessionPrice, // Prefer calculated
           duration: sessionDuration,
           category: profile.category,
-          level: selectedLevel // Pass level
+          level: expertLevel // Pass level
         }
       }
     }
@@ -485,31 +514,59 @@ const BookSessionPage = () => {
       </div>
 
       {/* Level Selector */}
-      <div>
-        <label className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2 block">Difficulty Level</label>
-        <div className="grid grid-cols-2 gap-2">
-          {["Beginner", "Intermediate", "Advanced", "Expert"].map((lvl) => (
-            <button
-              key={lvl}
-              onClick={() => setSelectedLevel(lvl)}
-              className={`text-xs font-bold py-2 px-3 rounded-lg border transition-all ${selectedLevel === lvl
-                ? "bg-blue-50 border-[#004fcb] text-[#004fcb]"
-                : "bg-white border-gray-200 text-gray-600 hover:border-gray-300"
-                }`}
-            >
-              {lvl}
-            </button>
-          ))}
+      {/* Level & Duration Selector */}
+      <div className="grid grid-cols-2 gap-4 mb-4">
+        <div>
+          <span className="text-xs font-bold text-gray-500 uppercase tracking-wide block mb-1">Expert Level</span>
+          <select
+            value={expertLevel}
+            onChange={(e) => setExpertLevel(e.target.value)}
+            className="w-full text-sm font-bold text-gray-900 bg-blue-50 border border-blue-100 text-blue-700 px-3 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+          >
+            <option value="Beginner">Beginner</option>
+            <option value="Intermediate">Intermediate</option>
+            <option value="Advanced">Advanced</option>
+          </select>
+        </div>
+        <div>
+          <span className="text-xs font-bold text-gray-500 uppercase tracking-wide block mb-1">Duration</span>
+          <select
+            value={sessionDuration}
+            onChange={(e) => setSessionDuration(Number(e.target.value))}
+            className="w-full text-sm font-bold text-gray-900 bg-blue-50 border border-blue-100 text-blue-700 px-3 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+          >
+            <option value={30}>30 Minutes</option>
+            <option value={60}>60 Minutes</option>
+          </select>
         </div>
       </div>
 
 
       {/* Month Header */}
       <div className="flex flex-col px-1">
-        <h4 className="text-[10px] font-black text-[#004fcb] uppercase tracking-widest mb-0.5">
-          {dates[selectedDate]?.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-        </h4>
-        <span className="text-[10px] font-medium text-gray-400">Select your preferred date</span>
+        <div className="flex items-center justify-between mb-2">
+          <div>
+            <h4 className="text-[10px] font-black text-[#004fcb] uppercase tracking-widest mb-0.5">
+              {currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+            </h4>
+            <span className="text-[10px] font-medium text-gray-400">Select your preferred date</span>
+          </div>
+          <div className="flex gap-1">
+            <button
+              onClick={prevMonth}
+              disabled={currentMonth.getMonth() === new Date().getMonth() && currentMonth.getFullYear() === new Date().getFullYear()}
+              className="p-1 rounded-md hover:bg-gray-100 disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              <ChevronLeft size={16} className="text-gray-600" />
+            </button>
+            <button
+              onClick={nextMonth}
+              className="p-1 rounded-md hover:bg-gray-100"
+            >
+              <ChevronRight size={16} className="text-gray-600" />
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* Date Picker - Compact Horizontal with Floating Arrows */}
@@ -991,8 +1048,8 @@ const BookSessionPage = () => {
 
               <div className="bg-gray-50 rounded-xl p-4 mb-8 border border-gray-100">
                 <div className="flex justify-between text-sm py-1">
-                  <span className="text-gray-500 font-medium">Session Fee</span>
-                  <span className="text-gray-900 font-bold">{profile.price}</span>
+                  <span className="text-gray-500 font-medium">Session Fee ({sessionDuration} mins)</span>
+                  <span className="text-gray-900 font-bold">₹{calculatedPrice}</span>
                 </div>
                 <div className="flex justify-between text-sm py-1">
                   <span className="text-gray-500 font-medium">Service Tax</span>
@@ -1001,7 +1058,7 @@ const BookSessionPage = () => {
                 <div className="h-px bg-gray-200 my-2"></div>
                 <div className="flex justify-between text-base py-1">
                   <span className="text-gray-900 font-bold">Total Amount</span>
-                  <span className="text-[#004fcb] font-black">{profile.price}</span>
+                  <span className="text-[#004fcb] font-black">₹{calculatedPrice}</span>
                 </div>
               </div>
 

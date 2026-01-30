@@ -26,7 +26,10 @@ function calculateProfileCompletion(user) {
     if (user.education && user.education.length > 0) score += 20;
 
     // Experience (25%)
-    if (user.experience && user.experience.length > 0) score += 25;
+    if (user.experience && user.experience.length > 0) score += 20;
+
+    // Certifications (5%)
+    if (user.certifications && user.certifications.length > 0) score += 5;
 
     // Skills (15%)
     if (user.skills?.technical && user.skills.technical.length > 0) score += 5;
@@ -183,6 +186,38 @@ export const updateExperience = async (req, res) => {
     }
 };
 
+/* ----------------- Update Certifications ------------------ */
+export const updateCertifications = async (req, res) => {
+    try {
+        const userId = req.headers.userid;
+        const { certifications } = req.body;
+
+        if (!userId) {
+            return res.status(400).json({ success: false, message: "User ID required" });
+        }
+
+        const user = await User.findById(userId);
+
+        if (!user) {
+            return res.status(404).json({ success: false, message: "User not found" });
+        }
+
+        user.certifications = certifications;
+        user.profileCompletion = calculateProfileCompletion(user);
+
+        await user.save();
+
+        return res.json({
+            success: true,
+            message: "Certifications updated successfully",
+            profileCompletion: user.profileCompletion
+        });
+    } catch (err) {
+        console.error("updateCertifications error:", err);
+        return res.status(500).json({ success: false, message: "Internal error" });
+    }
+};
+
 /* ----------------- Update Skills ------------------ */
 export const updateSkills = async (req, res) => {
     try {
@@ -296,6 +331,76 @@ export const saveProfileImage = async (req, res) => {
         });
     } catch (err) {
         console.error("saveProfileImage error:", err);
+        return res.status(500).json({ success: false, message: "Internal error" });
+    }
+};
+
+/* ----------------- Get Resume Data (Profile + Performance) ------------------ */
+export const getResumeData = async (req, res) => {
+    try {
+        const userId = req.headers.userid;
+        if (!userId) return res.status(400).json({ success: false, message: "User ID required" });
+
+        const user = await User.findById(userId).select("-password").lean();
+        if (!user) return res.status(404).json({ success: false, message: "User not found" });
+
+        // Fetch Interview Performance (Reviews from Experts)
+        // Note: candidateId in Review is String, user._id is ObjectId. Convert if needed.
+        const Review = (await import("../models/reviewModel.js")).default;
+        const reviews = await Review.find({
+            candidateId: String(user._id),
+            reviewerRole: "expert"
+        }).sort({ createdAt: -1 }).limit(5).lean();
+
+        // Calculate Stats
+        const totalSessions = reviews.length;
+        const avgTechnical = totalSessions > 0
+            ? (reviews.reduce((sum, r) => sum + (r.technicalRating || 0), 0) / totalSessions).toFixed(1)
+            : 0;
+        const avgCommunication = totalSessions > 0
+            ? (reviews.reduce((sum, r) => sum + (r.communicationRating || 0), 0) / totalSessions).toFixed(1)
+            : 0;
+
+        // Collect unique strengths from all reviews
+        const allStrengths = new Set();
+        reviews.forEach(r => {
+            if (Array.isArray(r.strengths)) {
+                r.strengths.forEach(s => allStrengths.add(s));
+            }
+        });
+
+        const resumeData = {
+            personalInfo: {
+                name: user.name,
+                email: user.email,
+                phone: user.personalInfo?.phone || "",
+                location: `${user.personalInfo?.city || ""}, ${user.personalInfo?.state || ""}`,
+                bio: user.personalInfo?.bio || "",
+                links: {
+                    linkedin: "", // Todo: Add these to User model later if needed
+                    portfolio: ""
+                }
+            },
+            education: user.education || [],
+            experience: user.experience || [],
+            certifications: user.certifications || [],
+            skills: user.skills || { technical: [], soft: [], languages: [] },
+            performance: {
+                totalInterviews: totalSessions,
+                avgTechnical,
+                avgCommunication,
+                highlights: Array.from(allStrengths).slice(0, 8), // Top 8 strengths
+                recentFeedback: reviews.map(r => ({
+                    date: r.createdAt,
+                    rating: r.overallRating,
+                    feedback: r.feedback
+                }))
+            }
+        };
+
+        return res.json({ success: true, data: resumeData });
+    } catch (err) {
+        console.error("getResumeData error:", err);
         return res.status(500).json({ success: false, message: "Internal error" });
     }
 };

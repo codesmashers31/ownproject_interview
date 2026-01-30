@@ -75,22 +75,16 @@ const availabilitySchema = new mongoose.Schema({
 
 const expertSchema = new mongoose.Schema(
   {
-    profileImage: { type: String, trim: true },
+    profileImage: { type: String, trim: true }, // Legacy: maintained for migration, but source of truth is User
 
     personalInformation: {
-      userName: { type: String, trim: true },
-      mobile: { type: String, trim: true },
-      gender: { type: String, enum: ["Male", "Female", "Other"], default: "Male", trim: true },
-      dob: { type: Date },
-      country: { type: String, trim: true },
-      state: { type: String, trim: true },
-      city: { type: String, trim: true },
-      /* 🔥 CATEGORY - Can only be set once (enforced in controller) */
+      // Identity fields (name, mobile, gender, dob, address) are now in User model.
+      // We only keep category here as it's specific to the expert role context logic sometimes,
+      // though ideally it fits in Expert Details proper. Keeping it here for now as requested.
       category: {
         type: String,
         enum: ["IT", "HR", "Business", "Design", "Marketing", "Finance", "AI", "IT & Software", "Non-IT Corporate", "Medical", "Legal", "Creative"],
         trim: true
-        // Note: immutable flag removed - we enforce immutability in controller
       }
     },
 
@@ -104,6 +98,11 @@ const expertSchema = new mongoose.Schema(
       company: { type: String, trim: true },
       totalExperience: { type: Number, min: 0 },
       industry: { type: String, trim: true },
+      level: {
+        type: String,
+        enum: ["Beginner", "Intermediate", "Advanced"],
+        default: "Intermediate"
+      },
       previous: { type: [experienceSchema], default: [] }
     },
 
@@ -137,11 +136,7 @@ const expertSchema = new mongoose.Schema(
     },
 
     /* ----------------- Pricing REMOVED (Centralized Engine) ------------------ */
-    // pricing: {
-    //   hourlyRate: { type: Number, required: true, default: 500 },
-    //   currency: { type: String, default: "INR", trim: true },
-    //   customPricing: { type: Boolean, default: false } // Admin can override
-    // },
+    // Pricing is now fully dynamic via PricingRules table based on Category + Level + Duration
 
     /* ----------------- Admin Mappings (Old Layer - Deprecated or Simple Tagging) ------------------ */
     adminMappings: {

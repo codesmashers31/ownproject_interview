@@ -1,10 +1,12 @@
 import SavedExpert from '../models/SavedExpert.js';
-import Expert from '../models/expertModel.js';
+import Expert from '../models/expertModel.js'; // This registers 'ExpertDetails'
+// Ensure ExpertDetails is registered before we populate
+import mongoose from 'mongoose';
 
 // Save an expert
 export const saveExpert = async (req, res) => {
     try {
-        const userId = req.user.id; // From auth middleware
+        const userId = req.user.userId; // Fixed: JWT payload uses userId
         const { expertId } = req.body;
 
         if (!expertId) {
@@ -49,7 +51,7 @@ export const saveExpert = async (req, res) => {
 // Get all saved experts for user
 export const getSavedExperts = async (req, res) => {
     try {
-        const userId = req.user.id;
+        const userId = req.user.userId;
 
         const savedExperts = await SavedExpert.find({ userId })
             .populate({
@@ -72,7 +74,7 @@ export const getSavedExperts = async (req, res) => {
 // Remove saved expert
 export const removeSavedExpert = async (req, res) => {
     try {
-        const userId = req.user.id;
+        const userId = req.user.userId;
         const { id } = req.params; // This is the SavedExpert document ID? Or the expertId? 
         // Requirement said "DELETE /api/user/saved-expert/:id". Usually :id is the resource ID.
         // But for toggle behavior from card, we might possess `expertId` more easily.
@@ -113,7 +115,7 @@ export const removeSavedExpert = async (req, res) => {
 // Check if expert is saved (helper for card state)
 export const checkIsSaved = async (req, res) => {
     try {
-        const userId = req.user.id;
+        const userId = req.user.userId;
         const { expertId } = req.params;
 
         const exists = await SavedExpert.exists({ userId, expertId });

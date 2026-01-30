@@ -21,6 +21,16 @@ const experienceSchema = new mongoose.Schema({
   description: { type: String, trim: true, maxlength: 500 }
 }, { _id: true });
 
+/* ----------------- Certification Schema ------------------ */
+const certificationSchema = new mongoose.Schema({
+  name: { type: String, required: true, trim: true },
+  issuer: { type: String, required: true, trim: true },
+  issueDate: { type: Date, required: true },
+  expiryDate: { type: Date },
+  credentialId: { type: String, trim: true },
+  credentialUrl: { type: String, trim: true }
+}, { _id: true });
+
 /* ----------------- User Schema ------------------ */
 const userSchema = new mongoose.Schema({
   email: {
@@ -79,6 +89,11 @@ const userSchema = new mongoose.Schema({
 
   experience: {
     type: [experienceSchema],
+    default: []
+  },
+
+  certifications: {
+    type: [certificationSchema],
     default: []
   },
 

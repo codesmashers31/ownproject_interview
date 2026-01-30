@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Save, Upload } from "lucide-react";
 import axios from '../../lib/axios';
 import { toast } from "sonner";
@@ -16,8 +16,11 @@ interface PersonalInfo {
     bio?: string;
 }
 
+
+
 interface ProfileData {
     name?: string;
+    email?: string; // Ensure email is in ProfileData interface
     profileImage?: string;
     personalInfo?: PersonalInfo;
 }
@@ -30,7 +33,8 @@ interface PersonalInfoSectionProps {
 export default function PersonalInfoSection({ profileData, onUpdate }: PersonalInfoSectionProps) {
     const { user } = useAuth();
     const [formData, setFormData] = useState({
-        name: profileData?.name || "",
+        name: profileData?.name || user?.name || "",
+        email: profileData?.email || user?.email || "", // Add email to state
         phone: profileData?.personalInfo?.phone || "",
         dateOfBirth: profileData?.personalInfo?.dateOfBirth ? new Date(profileData.personalInfo.dateOfBirth).toISOString().split('T')[0] : "",
         gender: profileData?.personalInfo?.gender || "",
@@ -41,6 +45,23 @@ export default function PersonalInfoSection({ profileData, onUpdate }: PersonalI
     });
     const [saving, setSaving] = useState(false);
     const [uploading, setUploading] = useState(false);
+
+    // Sync form data when profileData updates
+    useEffect(() => {
+        if (profileData) {
+            setFormData({
+                name: profileData.name || user?.name || "",
+                email: profileData.email || user?.email || "", // Sync email
+                phone: profileData.personalInfo?.phone || "",
+                dateOfBirth: profileData.personalInfo?.dateOfBirth ? new Date(profileData.personalInfo.dateOfBirth).toISOString().split('T')[0] : "",
+                gender: profileData.personalInfo?.gender || "",
+                country: profileData.personalInfo?.country || "",
+                state: profileData.personalInfo?.state || "",
+                city: profileData.personalInfo?.city || "",
+                bio: profileData.personalInfo?.bio || ""
+            });
+        }
+    }, [profileData]);
 
     // Get all countries
     const countries = useMemo(() => {
@@ -182,6 +203,17 @@ export default function PersonalInfoSection({ profileData, onUpdate }: PersonalI
                         onChange={handleChange}
                         className="w-full px-4 py-2 border border-blue-100 bg-slate-50/50 rounded-lg focus:ring-2 focus:ring-[#004fcb]/20 focus:border-[#004fcb] transition-all"
                         placeholder="Your full name"
+                    />
+                </div>
+                <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">Email Address</label>
+                    <input
+                        type="email"
+                        name="email"
+                        value={formData.email}
+                        disabled
+                        className="w-full px-4 py-2 border border-blue-100 bg-slate-100 text-slate-500 rounded-lg cursor-not-allowed"
+                        placeholder="your@email.com"
                     />
                 </div>
                 <div>

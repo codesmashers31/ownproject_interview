@@ -159,53 +159,9 @@ export const getSessionsByCandidateId = async (candidateId) => {
 };
 
 export const seedTestSession = async () => {
-    const testSessionId = "test-session-001";
-    const sharedExpertId = "kohsanar20@gmail.com";
-
-    const now = new Date();
-    const start9am = new Date(now);
-    start9am.setHours(9, 0, 0, 0);
-    const end10am = new Date(now);
-    end10am.setHours(10, 0, 0, 0);
-
-    let session = await Session.findOne({ sessionId: testSessionId });
-
-    if (!session) {
-        session = new Session({
-            sessionId: testSessionId,
-            expertId: sharedExpertId,
-            candidateId: "candidate-456",
-            startTime: start9am,
-            endTime: end10am,
-            topics: ["React", "System Design", "Unified Testing"],
-            status: "confirmed"
-        });
-        await session.save();
-    } else {
-        session.expertId = sharedExpertId;
-        session.startTime = start9am;
-        session.endTime = end10am;
-        session.status = "confirmed";
-        await session.save();
-    }
-
-    const userSessionId = "test-session-kohsanar-extra";
-    let userSession = await Session.findOne({ sessionId: userSessionId });
-
-    if (!userSession) {
-        userSession = new Session({
-            sessionId: userSessionId,
-            expertId: sharedExpertId,
-            candidateId: "candidate-789",
-            startTime: new Date(Date.now() + 1000 * 60 * 60 * 24),
-            endTime: new Date(Date.now() + 1000 * 60 * 60 * 25),
-            topics: ["Future Session"],
-            status: "confirmed"
-        });
-        await userSession.save();
-    }
-
-    return [session, userSession];
+    // Legacy seeding disabled in favor of dummySeed.js
+    console.log("Skipping legacy seedTestSession");
+    return [];
 };
 
 export const getAllSessions = async () => {

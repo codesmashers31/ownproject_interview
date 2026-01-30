@@ -17,45 +17,43 @@ export const createSession = async (req, res) => {
         const durationMinutes = (end - start) / (1000 * 60);
 
         // Fetch Expert to get Category
-        // Note: expertId input might be userId or expertId. We need to resolve it. 
-        // Assuming expertId passed here is the ExpertDetails._id or userId
         let expert = await ExpertDetails.findOne({ $or: [{ _id: expertId }, { userId: expertId }] });
-
-        let finalPrice = 0;
-        if (expert) {
-            const categoryName = expert.personalInformation?.category || "IT";
-            const selectedLevel = level || "Intermediate"; // Default if not provided
-
-            // 1. Resolve Category Name to ID
-            const Category = (await import('../models/Category.js')).default;
-            let categoryId = null;
-            const categoryDoc = await Category.findOne({ name: categoryName });
-            if (categoryDoc) {
-                categoryId = categoryDoc._id;
-            }
-
-            if (categoryId) {
-                // 2. Lookup Price Rule (Centralized Engine)
-                // Priority: Specific Skill -> Category Base
-                // TODO: If topics map to a specific skillId, lookup by skillId first.
-                // For now, we use base category price unless skill is explicitly passed (future enhancement)
-
-                const pricingRule = await PricingRule.findOne({
-                    categoryId: categoryId,
-                    skillId: null, // Base price by default (can be enhanced to look up skillId from topics)
-                    level: selectedLevel,
-                    duration: Number(durationMinutes)
-                });
-
-                if (pricingRule) {
-                    finalPrice = pricingRule.price;
-                } else {
-                    console.warn(`Pricing rule not found for CatID:${categoryId} Lvl:${selectedLevel} Dur:${durationMinutes}. Defaulting to 0.`);
-                }
-            } else {
-                console.warn(`Category '${categoryName}' not found in DB. Defaulting to 0.`);
-            }
+        if (!expert) {
+            return res.status(404).json({ success: false, message: "Expert not found" });
         }
+
+        // --- STRICT PRICING ENFORCEMENT ---
+        let finalPrice = 0;
+
+        const categoryName = expert.personalInformation?.category || "IT";
+        // Use Expert's defined level (or override from request if allowed? User said "Expert has no control", usually means Expert sets their level, Admin sets price for Level.
+        // Assuming we use the Expert's level from profile usually, OR the level requested in booking?
+        // Task says "When a user selects duration... fetch correct price".
+        // Usually booking is for a specific level usage. Let's use request level if present, else expert level.
+        const selectedLevel = level || expert.professionalDetails?.level || "Intermediate";
+
+        const Category = (await import('../models/Category.js')).default;
+        const catDoc = await Category.findOne({ name: categoryName });
+
+        if (!catDoc) {
+            return res.status(400).json({ success: false, message: `Category '${categoryName}' not configured in system.` });
+        }
+
+        // Resolve Price
+        const pricingRule = await PricingRule.findOne({
+            categoryId: catDoc._id,
+            skillId: null, // Base price by default. (Improvement: match topic to skillId later)
+            level: selectedLevel,
+            duration: Number(durationMinutes)
+        });
+
+        if (!pricingRule) {
+            // CRITICAL: Fail if no price set. Do not allow 0 Unless intended.
+            return res.status(400).json({ success: false, message: `Pricing not configured for ${categoryName} - ${selectedLevel} - ${durationMinutes}mins.` });
+        }
+
+        finalPrice = pricingRule.price;
+        // ----------------------------------
 
         const sessionData = {
             sessionId,
@@ -64,7 +62,7 @@ export const createSession = async (req, res) => {
             startTime: start,
             endTime: end,
             topics: topics || [],
-            price: finalPrice, // Set dynamically
+            price: finalPrice, // ALWAYS use server-calculated price
             status: status || 'confirmed'
         };
 

@@ -4,6 +4,7 @@ import axios from '../lib/axios';
 
 export interface User {
   id?: string;
+  _id?: string;
   userId?: string;
   email: string;
   userType: string;

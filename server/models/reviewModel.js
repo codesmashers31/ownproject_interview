@@ -5,16 +5,19 @@ const reviewSchema = new mongoose.Schema(
     {
         // We use String to match the Session.js schema which uses String UUIDs/IDs
         sessionId: {
-            type: String,
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Session',
             required: true,
             index: true
         },
         expertId: {
-            type: String, // Storing as String to match Session.expertId
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User',
             required: true
         },
         candidateId: {
-            type: String, // Storing as String to match Session.candidateId
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User',
             required: true
         },
 

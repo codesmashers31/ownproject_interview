@@ -1,15 +1,16 @@
-import { useState, useEffect } from "react";
-import { User, Phone, MapPin, Calendar, Briefcase, Award, Settings2, Bookmark } from "lucide-react";
+import { useState } from "react";
+import { User, Phone, MapPin, Calendar, Briefcase, Award, Settings2, Bookmark, FileText } from "lucide-react";
 import axios from '../lib/axios';
 import { useAuth } from "../context/AuthContext";
 import Navigation from "../components/Navigation";
 import PersonalInfoSection from "../components/profile/PersonalInfoSection";
 import EducationSection from "../components/profile/EducationSection";
 import ExperienceSection from "../components/profile/ExperienceSection";
+import CertificationsSection from "../components/profile/CertificationsSection";
 import SkillsSection from "../components/profile/SkillsSection";
 import PreferencesSection from "../components/profile/PreferencesSection";
-import SavedExpertsSection from "../components/profile/SavedExpertsSection";
-
+import ResumePreview from "../components/profile/ResumePreview";
+import { useQuery } from "@tanstack/react-query";
 import { getProfileImageUrl } from "../lib/imageUtils";
 
 interface ProfileData {
@@ -27,6 +28,7 @@ interface ProfileData {
     };
     education?: any[];
     experience?: any[];
+    certifications?: any[];
     skills?: {
         technical?: string[];
         soft?: string[];
@@ -38,40 +40,32 @@ interface ProfileData {
 export default function UserProfile() {
     const { user } = useAuth();
     const [activeTab, setActiveTab] = useState("personal");
-    const [profileData, setProfileData] = useState<ProfileData | null>(null);
-    const [loading, setLoading] = useState(true);
+    const [isResumeOpen, setIsResumeOpen] = useState(false);
 
-    useEffect(() => {
-        fetchProfile();
-    }, []);
-
-    const fetchProfile = async () => {
-        try {
-            setLoading(true);
+    // Replace manual fetch/state with React Query to prevent flickering
+    const { data: profileData, isLoading, refetch } = useQuery({
+        queryKey: ["userProfile", user?.id],
+        queryFn: async () => {
+            if (!user?.id) return null;
             const response = await axios.get("/api/user/profile", {
-                headers: { userid: user?.id }
+                headers: { userid: user.id }
             });
-
-            if (response.data.success) {
-                setProfileData(response.data.data);
-            }
-        } catch (error) {
-            console.error("Error fetching profile:", error);
-        } finally {
-            setLoading(false);
-        }
-    };
+            return response.data.success ? response.data.data : null;
+        },
+        enabled: !!user?.id,
+        staleTime: 1000 * 60 * 5, // Cache data for 5 mins to prevent unnecessary fetches
+    });
 
     const tabs = [
         { id: "personal", label: "Personal Info", icon: User },
         { id: "education", label: "Education", icon: Award },
         { id: "experience", label: "Experience", icon: Briefcase },
+        { id: "certifications", label: "Certifications", icon: Award },
         { id: "skills", label: "Skills", icon: Settings2 },
-        { id: "preferences", label: "Preferences", icon: Calendar },
-        { id: "saved", label: "Saved Experts", icon: Bookmark }
+        { id: "preferences", label: "Preferences", icon: Calendar }
     ];
 
-    if (loading) {
+    if (isLoading) {
         return (
             <div className="min-h-screen bg-gray-50 flex items-center justify-center">
                 <div className="text-center">
@@ -86,7 +80,6 @@ export default function UserProfile() {
         <>
             <Navigation />
             <div className="min-h-screen bg-gray-50">
-                {/* Header */}
                 {/* Header */}
                 <div className="bg-white border-b border-blue-100">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -126,7 +119,6 @@ export default function UserProfile() {
                 {/* Main Content */}
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                     <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-                        {/* Sidebar */}
                         {/* Sidebar */}
                         <div className="lg:col-span-1">
                             <div className="bg-white rounded-xl shadow-sm border border-blue-100 overflow-hidden">
@@ -187,40 +179,49 @@ export default function UserProfile() {
                                             );
                                         })}
                                     </nav>
+
+                                    {/* Resume Generator Button */}
+                                    <div className="mt-6 pt-6 border-t border-gray-100">
+                                        <button
+                                            onClick={() => setIsResumeOpen(true)}
+                                            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-bold text-white bg-gradient-to-r from-[#004fcb] to-[#0065ff] hover:shadow-md transition-all group"
+                                        >
+                                            <FileText className="w-4 h-4 text-white/90 group-hover:scale-110 transition-transform" />
+                                            Generate Resume
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
 
-
-
-                        // ...
-
-                        // Content Area
                         {/* Content Area */}
                         <div className="lg:col-span-3">
                             <div className="bg-white rounded-xl shadow-sm border border-blue-100 p-6">
                                 {activeTab === "personal" && (
-                                    <PersonalInfoSection profileData={profileData} onUpdate={fetchProfile} />
+                                    <PersonalInfoSection profileData={profileData} onUpdate={refetch} />
                                 )}
                                 {activeTab === "education" && (
-                                    <EducationSection profileData={profileData} onUpdate={fetchProfile} />
+                                    <EducationSection profileData={profileData} onUpdate={refetch} />
                                 )}
                                 {activeTab === "experience" && (
-                                    <ExperienceSection profileData={profileData} onUpdate={fetchProfile} />
+                                    <ExperienceSection profileData={profileData} onUpdate={refetch} />
+                                )}
+                                {activeTab === "certifications" && (
+                                    <CertificationsSection profileData={profileData} onUpdate={refetch} />
                                 )}
                                 {activeTab === "skills" && (
-                                    <SkillsSection profileData={profileData} onUpdate={fetchProfile} />
+                                    <SkillsSection profileData={profileData} onUpdate={refetch} />
                                 )}
                                 {activeTab === "preferences" && (
-                                    <PreferencesSection profileData={profileData} onUpdate={fetchProfile} />
-                                )}
-                                {activeTab === "saved" && (
-                                    <SavedExpertsSection />
+                                    <PreferencesSection profileData={profileData} onUpdate={refetch} />
                                 )}
                             </div>
                         </div>
                     </div>
                 </div>
+
+                {/* Resume Preview Modal */}
+                <ResumePreview isOpen={isResumeOpen} onClose={() => setIsResumeOpen(false)} />
             </div>
         </>
     );

@@ -25,7 +25,7 @@ const ExpertProfession = ({ onUpdate, isMissing, profileData }: ExpertProfession
     }
   };
 
-  const [profile, setProfile] = useState<{ professional: { title: string; company: string; totalExperience: string; industry: string; previous: any[] } }>(initialProfile);
+  const [profile, setProfile] = useState<{ professional: { title: string; company: string; totalExperience: string; industry: string; level?: string; previous: any[] } }>(initialProfile);
   const [loading, setLoading] = useState(true);
 
   // ---------------- Fetch professional info ----------------
@@ -155,6 +155,19 @@ const ExpertProfession = ({ onUpdate, isMissing, profileData }: ExpertProfession
           value={profile.professional?.industry || ""}
           onChange={(v) => setProfessionalField("industry", v)}
         />
+        <div className="flex flex-col gap-1">
+          <label className="text-sm font-semibold text-gray-700">Experience Level</label>
+          <select
+            className="border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-blue-100 focus:border-blue-400 text-gray-700 bg-white"
+            value={profile.professional?.level || "Intermediate"}
+            onChange={(e) => setProfessionalField("level", e.target.value)}
+          >
+            <option value="Beginner">Beginner</option>
+            <option value="Intermediate">Intermediate</option>
+            <option value="Advanced">Advanced</option>
+          </select>
+          <p className="text-xs text-gray-500">Determines your pricing tier.</p>
+        </div>
       </div>
 
       {profile.professional.previous.length > 0 && (

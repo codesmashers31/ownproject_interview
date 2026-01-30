@@ -24,10 +24,6 @@ const categorySchema = new mongoose.Schema({
         type: [String],
         default: ['Beginner', 'Intermediate', 'Advanced']
     },
-    amount: {
-        type: Number,
-        default: 0
-    },
     status: {
         type: String,
         enum: ['Active', 'Inactive'],

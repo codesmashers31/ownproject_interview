@@ -23,12 +23,18 @@ const cloudProfileStorage = new CloudinaryStorage({
 const cloudVerificationStorage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: async (req, file) => {
-    let format = "jpg";
-    if (file.mimetype === "application/pdf") format = "pdf";
+    // If PDF, use raw to prevent image conversion issues
+    if (file.mimetype === "application/pdf") {
+      return {
+        folder: "benchmock/verification",
+        resource_type: "raw", // Important for PDFs to be downloadable/viewable as files
+        format: undefined, // Keep original extension
+      };
+    }
     return {
       folder: "benchmock/verification",
-      resource_type: "auto",
-      allowed_formats: ["jpg", "jpeg", "png", "pdf"],
+      resource_type: "image",
+      allowed_formats: ["jpg", "jpeg", "png"],
     };
   },
 });

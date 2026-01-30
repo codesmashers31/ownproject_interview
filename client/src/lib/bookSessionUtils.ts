@@ -28,6 +28,7 @@ export interface Profile {
     isFeatured?: boolean;
     availableTime?: string;
     company?: string;
+    level?: string; // Added level for dynamic pricing
     logo?: string; // BookSessionPage uses logo instead of avatar sometimes? Standardizing on avatar if possible but mapping for safety
     openings?: number;
     availability?: {
@@ -172,6 +173,7 @@ export const mapExpertToProfile = (expert: any): Profile => {
         avatar, location, mode, reviews, responseTime, successRate,
         isVerified: expert.status === "Active",
         availableTime, languages,
+        level: expert.professionalDetails?.level || "Intermediate", // Mapped level
         logo: avatar, // Mapping avatar to logo for compatibility
         openings: 5, // Default openings
         availability: expert.availability // Passing raw availability

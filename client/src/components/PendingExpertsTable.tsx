@@ -37,9 +37,9 @@ interface SkillsAndExpertise {
 }
 
 interface Verification {
-    aadharFile: string;
-    companyIdFile: string;
-    linkedin: string;
+    aadhar?: { url: string; name: string };
+    companyId?: { url: string; name: string };
+    linkedin?: string;
 }
 
 interface Expert {
@@ -423,21 +423,45 @@ const PendingExpertsTable: React.FC = () => {
                                             href={selectedExpert.verification.linkedin}
                                             target="_blank"
                                             rel="noreferrer"
-                                            className="flex items-center justify-center gap-2 p-3 bg-blue-50 text-blue-700 rounded-lg text-sm font-medium hover:bg-blue-100 transition-colors"
+                                            className="flex items-center justify-center gap-2 p-3 bg-blue-50 text-blue-700 rounded-lg text-sm font-medium hover:bg-blue-100 transition-colors border border-blue-200"
                                         >
                                             LinkedIn Profile
                                         </a>
                                     ) : (
-                                        <div className="flex items-center justify-center gap-2 p-3 bg-gray-50 text-gray-400 rounded-lg text-sm font-medium italic">
-                                            No LinkedIn provided
+                                        <div className="flex items-center justify-center gap-2 p-3 bg-gray-50 text-gray-400 rounded-lg text-sm font-medium italic border border-gray-100">
+                                            No LinkedIn
                                         </div>
                                     )}
-                                    <button disabled className="flex items-center justify-center gap-2 p-3 bg-gray-50 text-gray-400 rounded-lg text-sm font-medium cursor-not-allowed">
-                                        Aadhar (Protected)
-                                    </button>
-                                    <button disabled className="flex items-center justify-center gap-2 p-3 bg-gray-50 text-gray-400 rounded-lg text-sm font-medium cursor-not-allowed">
-                                        Company ID (Protected)
-                                    </button>
+
+                                    {selectedExpert.verification?.aadhar?.url ? (
+                                        <a
+                                            href={selectedExpert.verification.aadhar.url}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                            className="flex items-center justify-center gap-2 p-3 bg-amber-50 text-amber-700 rounded-lg text-sm font-medium hover:bg-amber-100 transition-colors border border-amber-200"
+                                        >
+                                            View Govt ID (Aadhar)
+                                        </a>
+                                    ) : (
+                                        <div className="flex items-center justify-center gap-2 p-3 bg-gray-50 text-gray-400 rounded-lg text-sm font-medium italic border border-gray-100">
+                                            Govt ID Missing
+                                        </div>
+                                    )}
+
+                                    {selectedExpert.verification?.companyId?.url ? (
+                                        <a
+                                            href={selectedExpert.verification.companyId.url}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                            className="flex items-center justify-center gap-2 p-3 bg-purple-50 text-purple-700 rounded-lg text-sm font-medium hover:bg-purple-100 transition-colors border border-purple-200"
+                                        >
+                                            View Company Letter
+                                        </a>
+                                    ) : (
+                                        <div className="flex items-center justify-center gap-2 p-3 bg-gray-50 text-gray-400 rounded-lg text-sm font-medium italic border border-gray-100">
+                                            Company Doc Missing
+                                        </div>
+                                    )}
                                 </div>
                             </section>
 
