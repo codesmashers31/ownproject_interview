@@ -265,7 +265,7 @@ const AiInterview = () => {
                     <div className="absolute top-8 left-8 right-8 flex items-center justify-between">
                         <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-xl bg-white border border-gray-200 flex items-center justify-center shadow-sm overflow-hidden">
-                                <img src="/mockeefynew.png" alt="AI Bot" className="w-full h-full object-cover" />
+                                <img src="/benchmock.png" alt="AI Bot" className="w-full h-full object-cover" />
                             </div>
                             <div>
                                 <h2 className="font-bold text-gray-900 leading-none">{config.role} Interview</h2>
@@ -303,7 +303,7 @@ const AiInterview = () => {
                                 voiceState === 'processing' ? 'bg-gradient-to-br from-amber-400 to-orange-500' :
                                     'bg-white border-4 border-gray-100'
                             }`}>
-                            <img src="/mockeefynew.png" alt="AI Bot" className="w-full h-full object-cover" />
+                            <img src="/benchmock.png" alt="AI Bot" className="w-full h-full object-cover" />
                         </div>
 
                         {/* Status Badge */}
@@ -683,7 +683,7 @@ const AiInterview = () => {
 
                                     {/* AI Avatar */}
                                     <div className="w-16 h-16 rounded-2xl bg-white border border-gray-100 shadow-xl flex items-center justify-center mb-6 mx-auto relative z-10 overflow-hidden">
-                                        <img src="/mockeefynew.png" alt="AI Bot" className="w-full h-full object-cover" />
+                                        <img src="/benchmock.png" alt="AI Bot" className="w-full h-full object-cover" />
                                     </div>
 
                                     {/* Chat Bubble */}

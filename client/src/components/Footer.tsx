@@ -24,8 +24,8 @@ const Footer = () => (
         {/* Brand Column */}
         <div className="space-y-6">
           <div className="flex items-center gap-0 group relative h-12">
-            <img src="/mockeefynew.png" alt="Mockeefy" className="absolute top-[-20px] left-0 h-[90px] w-auto object-contain mix-blend-multiply" />
-            <div className="font-bold text-3xl text-[#004fcb] tracking-tight ml-[90px] font-['Outfit']">Mockeefy</div>
+            <img src="/benchmock.png" alt="BenchMock" className="absolute top-[-20px] left-0 h-[90px] w-auto object-contain mix-blend-multiply" />
+            <div className="font-bold text-3xl text-[#004fcb] tracking-tight ml-[90px] font-['Outfit']">BenchMock</div>
           </div>
           <p className="text-slate-600 leading-relaxed text-sm max-w-xs">
             The world's leading <span className="text-[#004fcb] font-semibold">AI-powered</span> mock interview platform. Master your interviews with expert guidance.
@@ -82,7 +82,7 @@ const Footer = () => (
       <div className="pt-8 border-t border-slate-100">
         <div className="flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="text-sm text-slate-400 font-medium text-center md:text-left">
-            © {new Date().getFullYear()} <span className="text-[#004fcb] font-bold">Mockeefy</span>. All rights reserved.
+            © {new Date().getFullYear()} <span className="text-[#004fcb] font-bold">BenchMock</span>. All rights reserved.
             <p className="mt-1 text-xs text-slate-400 font-normal">Professional interview preparation with verified experts</p>
           </div>
 

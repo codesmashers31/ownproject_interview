@@ -243,7 +243,7 @@ const BottomNav = () => {
                     <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                       <User size={32} className="text-gray-400" />
                     </div>
-                    <h3 className="text-lg font-bold text-gray-900">Welcome to Mockeefy</h3>
+                    <h3 className="text-lg font-bold text-gray-900">Welcome to BenchMock</h3>
                     <p className="text-gray-500 text-sm">Sign in to manage your profile and sessions</p>
                   </div>
 

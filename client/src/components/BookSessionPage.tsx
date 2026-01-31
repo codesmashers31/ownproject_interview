@@ -440,12 +440,12 @@ const BookSessionPage = () => {
           <div className="relative shrink-0 -mt-16 md:-mt-20">
             <div className="relative inline-block">
               <img
-                src={profile.avatar || "/mockeefynew.png"}
+                src={profile.avatar || "/benchmock.png"}
                 alt={profile.name}
                 className="w-24 h-24 md:w-28 md:h-28 rounded-2xl border-4 border-white bg-white object-cover shadow-md"
                 onError={(e) => {
                   const target = e.target as HTMLImageElement;
-                  target.src = "/mockeefynew.png";
+                  target.src = "/benchmock.png";
                 }}
               />
               <div className="absolute bottom-2 right-2 bg-green-500 border-2 border-white w-4 h-4 rounded-full"></div>

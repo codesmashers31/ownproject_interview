@@ -7,205 +7,23 @@ import Otp from "../models/Otp.js";
 import { OAuth2Client } from "google-auth-library";
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 
-// JWT Secret (use environment variable in production)
-const JWT_SECRET = process.env.JWT_SECRET;
-const REFRESH_TOKEN_SECRET = process.env.REFRESH_TOKEN_SECRET || "fallback-refresh-secret"; // Add this to env
-
-if (!JWT_SECRET) {
-  throw new Error("JWT_SECRET is not defined in .env file");
+if (!GOOGLE_CLIENT_ID) {
+  console.error("CRITICAL: GOOGLE_CLIENT_ID is not defined in environment variables.");
 }
 
-import { sendEmail } from "../services/emailService.js";
+// ... imports ...
 
-// Send OTP
-export const sendOtp = async (req, res) => {
-  const { email } = req.body;
-
-  if (!email) return res.status(400).json({ message: "Email is required" });
-
-  try {
-    // Generate 6-digit OTP
-    const otp = crypto.randomInt(100000, 999999);
-    const expires = Date.now() + 5 * 60 * 1000;
-
-    // Save OTP in MongoDB with 5 min expiry
-    await Otp.findOneAndUpdate(
-      { email },
-      { email, otp, expires },
-      { upsert: true, new: true }
-    );
-
-
-    const html = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <meta charset="utf-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>Verification Code</title>
-        </head>
-        <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f6f8;">
-          <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="min-width: 100%; background-color: #f4f6f8;">
-            <tr>
-              <td align="center" style="padding: 40px 0;">
-                <!-- Logo Area -->
-                <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px; margin-bottom: 20px;">
-                  <tr>
-                    <td align="center">
-                      <h2 style="color: #2d3748; margin: 0; font-size: 24px; font-weight: 700; letter-spacing: -0.5px;">Mockeefy</h2>
-                    </td>
-                  </tr>
-                </table>
-
-                <!-- Main Card -->
-                <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 600px; background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05); overflow: hidden;">
-                  <!-- Header Stripe -->
-                  <tr>
-                    <td style="background: linear-gradient(90deg, #4CAF50 0%, #45a049 100%); height: 6px;"></td>
-                  </tr>
-                  
-                  <!-- Content -->
-                  <tr>
-                    <td style="padding: 40px 40px 30px 40px; text-align: center;">
-                      <h1 style="color: #1a202c; font-size: 24px; font-weight: 700; margin: 0 0 16px 0;">Authentication Required</h1>
-                      <p style="color: #4a5568; font-size: 16px; line-height: 1.6; margin: 0 0 32px 0;">
-                        Please use the following One-Time Password (OTP) to complete your login securely.
-                      </p>
-
-                      <!-- OTP Box -->
-                      <div style="background-color: #f7fafc; border: 2px dashed #cbd5e0; border-radius: 8px; padding: 24px; margin-bottom: 32px; display: inline-block; min-width: 200px;">
-                        <span style="font-family: 'Monaco', 'Menlo', 'Courier New', monospace; font-size: 36px; font-weight: 700; color: #2d3748; letter-spacing: 8px;">${otp}</span>
-                      </div>
-
-                      <p style="color: #718096; font-size: 14px; margin: 0;">
-                        This code is valid for <strong>5 minutes</strong>.<br>
-                        Do not share this code with anyone.
-                      </p>
-                    </td>
-                  </tr>
-                  
-                  <!-- Divider -->
-                  <tr>
-                    <td style="border-top: 1px solid #edf2f7;"></td>
-                  </tr>
-                  
-                  <!-- Footer -->
-                  <tr>
-                    <td style="padding: 24px; background-color: #f8fafc; text-align: center;">
-                      <p style="color: #718096; font-size: 12px; margin: 0 0 8px 0;">
-                        If you didn't request this email, you can safely ignore it.
-                      </p>
-                      <p style="color: #a0aec0; font-size: 12px; margin: 0;">
-                        &copy; ${new Date().getFullYear()} Mockeefy. All rights reserved.
-                      </p>
-                    </td>
-                  </tr>
-                </table>
-              </td>
-            </tr>
-          </table>
-        </body>
-        </html>
-    `;
-
-    // Use shared email service
-    const sent = await sendEmail({
-      to: email,
-      subject: "Your One-Time Password (OTP) - Mockeefy",
-      html
-    });
-
-    if (!sent) {
-      console.error(`[OTP] Failed to send email to ${email}. emailService returned false.`);
-      throw new Error("Failed to send email via emailService");
-    }
-
-    console.log(`[OTP] Email sent successfully to ${email}`);
-    res.json({ message: "OTP sent successfully!" });
-  } catch (error) {
-    console.error("[OTP] Detailed Error:", error);
-    res.status(500).json({ message: "Error processing OTP request", error: error.message });
-  }
-};
-
-// Verify OTP
-export const verifyOtp = async (req, res) => {
-  const { email, otp } = req.body;
-
-  try {
-    const record = await Otp.findOne({ email });
-
-    if (!record) return res.status(400).json({ message: "OTP not found" });
-    if (Date.now() > record.expires) return res.status(400).json({ message: "OTP expired" });
-    if (parseInt(otp) !== record.otp) return res.status(400).json({ message: "Invalid OTP" });
-
-    // Delete the OTP after successful verification
-    await Otp.deleteOne({ email });
-
-    // Generate Reset Token (valid for 10 min)
-    // This token is required to reset the password
-    const resetToken = jwt.sign(
-      { email, purpose: 'reset_password' },
-      JWT_SECRET,
-      { expiresIn: "10m" }
-    );
-
-    res.json({ message: "OTP verified successfully", resetToken });
-  } catch (error) {
-    console.error("Error verifying OTP:", error);
-    res.status(500).json({ message: "Error verifying OTP", error: error.message });
-  }
-};
-
-// Reset Password
-export const resetPassword = async (req, res) => {
-  const { resetToken, newPassword } = req.body;
-
-  if (!resetToken || !newPassword) {
-    return res.status(400).json({ message: "Reset token and new password are required" });
-  }
-
-  try {
-    // Verify the reset token
-    const decoded = jwt.verify(resetToken, JWT_SECRET);
-
-    if (decoded.purpose !== 'reset_password') {
-      return res.status(403).json({ message: "Invalid token purpose" });
-    }
-
-    const { email } = decoded;
-
-    // Hash new password
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
-
-    // Update user password
-    const user = await User.findOneAndUpdate(
-      { email: email.toLowerCase() },
-      { password: hashedPassword },
-      { new: true }
-    );
-
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    res.json({ message: "Password reset successfully" });
-  } catch (error) {
-    console.error("Error resetting password:", error);
-    if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
-      return res.status(401).json({ message: "Invalid or expired reset token" });
-    }
-    res.status(500).json({ message: "Error resetting password", error: error.message });
-  }
-};
-
-// Verify Google Token (ID Token or Access Token)
 export const verifyGoogleToken = async (req, res) => {
   const { token } = req.body;
 
   if (!token) {
     return res.status(400).json({ message: "Google token is required" });
+  }
+
+  if (!GOOGLE_CLIENT_ID) {
+    return res.status(500).json({ message: "Server configuration error: Missing Google Client ID" });
   }
 
   let googleId, email, name, picture;
@@ -214,7 +32,7 @@ export const verifyGoogleToken = async (req, res) => {
     // 1. Try as ID Token
     const ticket = await client.verifyIdToken({
       idToken: token,
-      audience: process.env.GOOGLE_CLIENT_ID,
+      audience: GOOGLE_CLIENT_ID,
     });
     const payload = ticket.getPayload();
     googleId = payload.sub;
@@ -222,6 +40,8 @@ export const verifyGoogleToken = async (req, res) => {
     name = payload.name;
     picture = payload.picture;
   } catch (idTokenError) {
+    console.warn(`[Google Auth] ID Token verification failed: ${idTokenError.message}. Trying as Access Token...`);
+
     // 2. Try as Access Token
     try {
       const response = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {

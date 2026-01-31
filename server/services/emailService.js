@@ -2,28 +2,38 @@ import nodemailer from 'nodemailer';
 
 const transporterConfig = {
     pool: true,
-    host: "smtp.gmail.com",
-    port: 465,
-    secure: true,
+    host: process.env.SMTP_HOST || "smtp.gmail.com",
+    port: Number(process.env.SMTP_PORT) || 465,
+    secure: process.env.SMTP_SECURE === "true", // true for 465, false for other ports
     auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS,
     },
     maxConnections: 5,
+    // Increase timeout for production stability
+    connectionTimeout: 10000,
+    greetingTimeout: 10000,
+    socketTimeout: 10000,
 };
 
-console.log("Email Service: Using Gmail SMTP");
+// Log configuration (masking password)
+console.log("Email Service Configuration:", {
+    host: transporterConfig.host,
+    port: transporterConfig.port,
+    secure: transporterConfig.secure,
+    user: transporterConfig.auth.user ? "***" : "MISSING",
+});
 
 const transporter = nodemailer.createTransport(transporterConfig);
 
 // Verify connection configuration on startup
-// transporter.verify(function (error, success) {
-//     if (error) {
-//         console.error("Email Service Error: Connection verification failed.", error);
-//     } else {
-//         console.log("Email Service: Connected to Gmail SMTP");
-//     }
-// });
+transporter.verify(function (error, success) {
+    if (error) {
+        console.error("Email Service Verification Error:", error);
+    } else {
+        console.log("Email Service: Ready to send emails");
+    }
+});
 
 export const sendEmail = async ({ to, subject, html }) => {
     try {
@@ -35,7 +45,7 @@ export const sendEmail = async ({ to, subject, html }) => {
         const fromAddress = process.env.EMAIL_FROM || process.env.EMAIL_USER;
 
         const mailOptions = {
-            from: `"Mockeefy Support" <${fromAddress}>`,
+            from: `"BenchMock Support" <${fromAddress}>`,
             to,
             subject,
             html
@@ -43,10 +53,16 @@ export const sendEmail = async ({ to, subject, html }) => {
 
         // Asynchronous sending with pooled connections
         const info = await transporter.sendMail(mailOptions);
-        console.log(`Email sent: ${info.messageId}`);
+        console.log(`Email sent successfully. MessageID: ${info.messageId}`);
         return true;
     } catch (error) {
-        console.error("Error sending email:", error);
+        console.error("Error sending email:", {
+            message: error.message,
+            code: error.code,
+            command: error.command,
+            response: error.response,
+            responseCode: error.responseCode,
+        });
         return false;
     }
 };
@@ -69,13 +85,13 @@ export const notifyReviewReceived = async (expertName, candidateEmail, sessionTo
 
             <p>Log in to your dashboard to view the full detailed report.</p>
             <br>
-            <p>Best regards,<br>Mockeefy Team</p>
+            <p>Best regards,<br>BenchMock Team</p>
         </div>
     `;
 
     return sendEmail({
         to: candidateEmail,
-        subject: `New Feedback from ${expertName} - Mockeefy`,
+        subject: `New Feedback from ${expertName} - BenchMock`,
         html
     });
 };

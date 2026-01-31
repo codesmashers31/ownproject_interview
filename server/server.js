@@ -59,6 +59,9 @@ app.use(cors(corsOptions));
 app.options('*', cors(corsOptions));
 app.use(cookieParser());
 
+// Enable trust proxy for Render/Heroku (required for secure cookies)
+app.set('trust proxy', 1);
+
 const io = new Server(httpServer, {
   cors: {
     origin: allowedOrigins,

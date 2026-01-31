@@ -48,7 +48,7 @@ export default function SideNav({ isOpen = false, onClose, className = "" }: Sid
             <div className="w-8 h-8 bg-[#004fcb] rounded-lg flex items-center justify-center shadow-lg shadow-blue-500/20">
               <span className="text-white font-bold text-lg">M</span>
             </div>
-            <span className="text-xl font-bold tracking-tight text-gray-900 font-['Outfit']">Mockeefy</span>
+            <span className="text-xl font-bold tracking-tight text-gray-900 font-['Outfit']">BenchMock</span>
           </div>
         </div>
 
@@ -125,7 +125,7 @@ export default function SideNav({ isOpen = false, onClose, className = "" }: Sid
               <div className="w-8 h-8 bg-[#004fcb] rounded-lg flex items-center justify-center shadow-lg shadow-blue-500/20">
                 <span className="text-white font-bold text-lg">M</span>
               </div>
-              <span className="text-xl font-bold tracking-tight text-gray-900 font-['Outfit']">Mockeefy</span>
+              <span className="text-xl font-bold tracking-tight text-gray-900 font-['Outfit']">BenchMock</span>
             </div>
             <button type="button" onClick={onClose} className="p-2 -mr-2 text-gray-400 hover:text-gray-600 rounded-md">
               <span className="sr-only">Close menu</span>

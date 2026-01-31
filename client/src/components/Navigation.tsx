@@ -166,12 +166,12 @@ const Navigation = () => {
                 onClick={closeAllDropdowns}
               >
                 <img
-                  src="/mockeefynew.png"
-                  alt="Mockeefy"
+                  src="/benchmock.png"
+                  alt="BenchMock"
                   className="absolute  h-[100px] w-auto object-contain mix-blend-multiply"
                 />
                 <span className="text-3xl font-bold tracking-tight ml-[90px] text-[#004fcb] font-['Outfit']">
-                  Mockeefy
+                  BenchMock
                 </span>
               </Link>
 

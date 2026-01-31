@@ -55,8 +55,8 @@ export default function AdminSidebar() {
         <aside className="hidden lg:flex flex-col w-64 bg-white border-r border-gray-200 h-full">
             <div className="h-[80px] flex items-center px-6 border-b border-blue-100/50 overflow-hidden relative">
                 <div className="relative flex items-center w-full h-full">
-                    <img src="/mockeefynew.png" alt="Mockeefy" className="absolute left-[-28px] h-[90px] w-auto object-contain mix-blend-multiply" />
-                    <span className="ml-[52px] text-2xl font-bold tracking-tight text-[#004fcb] font-['Outfit']">Mockeefy</span>
+                    <img src="/benchmock.png" alt="BenchMock" className="absolute left-[-28px] h-[90px] w-auto object-contain mix-blend-multiply" />
+                    <span className="ml-[52px] text-2xl font-bold tracking-tight text-[#004fcb] font-['Outfit']">BenchMock</span>
                 </div>
             </div>
 

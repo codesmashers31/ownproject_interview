@@ -99,12 +99,12 @@ export const LoginForm = () => {
               {/* Logo matching Navigation */}
               <div className="flex items-center justify-center gap-0 relative h-24">
                 <img
-                  src="/mockeefynew.png"
-                  alt="Mockeefy"
+                  src="/benchmock.png"
+                  alt="BenchMock"
                   className="absolute h-[100px] w-auto object-contain mix-blend-multiply -ml-[140px]"
                 />
                 <span className="text-4xl font-bold tracking-tight text-[#004fcb] font-['Outfit'] ml-[40px] animate-fade-in">
-                  Mockeefy
+                  BenchMock
                 </span>
               </div>
 
