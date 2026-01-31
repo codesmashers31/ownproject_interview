@@ -260,21 +260,33 @@ export const joinSession = async (req, res) => {
         const session = await sessionService.getSessionById(sessionId);
         if (!session) return res.status(404).json({ message: "Session not found" });
 
-        // 1. Validate Identity (Resilient check for ID or Email)
+        // 1. Validate Identity (Resilient check for ID or Email or Expert Profile)
         const mongoose = (await import('mongoose')).default;
         const User = (await import('../models/User.js')).default;
+        const Expert = (await import('../models/expertModel.js')).default;
 
         let isParticipant = false;
 
-        // Convert to strings for comparison
+        // Convert session IDs to strings for comparison
         const sExpert = session.expertId?.toString() || "";
         const sCandidate = session.candidateId?.toString() || "";
         const uId = userId.toString();
 
+        // Check 1: Direct ID Match
         if (sExpert === uId || sCandidate === uId) {
             isParticipant = true;
-        } else {
-            // Check by email fallback
+        }
+
+        // Check 2: Expert Profile Match (if user is expert but session has ExpertDoc ID)
+        if (!isParticipant) {
+            const expertDoc = await Expert.findOne({ userId: userId });
+            if (expertDoc && (expertDoc._id.toString() === sExpert || expertDoc.userId.toString() === sExpert)) {
+                isParticipant = true;
+            }
+        }
+
+        // Check 3: Email Fallback (Legacy/Dev)
+        if (!isParticipant) {
             const user = await User.findById(userId);
             if (user && user.email) {
                 const uEmail = user.email.toLowerCase();

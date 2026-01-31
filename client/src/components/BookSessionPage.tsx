@@ -86,6 +86,20 @@ const BookSessionPage = () => {
   const [sessionDuration, setSessionDuration] = useState<number>(existingProfile?.availability?.sessionDuration || 30);
   const [calculatedPrice, setCalculatedPrice] = useState<number>(0);
 
+  // LinkedIn-style Profile Header
+  const bannerImage = useMemo(() => {
+    const banners = [
+      "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&w=1200&q=80",
+      "https://images.unsplash.com/photo-1557683316-973673baf926?auto=format&fit=crop&w=1200&q=80",
+      "https://images.unsplash.com/photo-1508615039623-a25605d2b022?auto=format&fit=crop&w=1200&q=80",
+      "https://images.unsplash.com/photo-1614850523296-d8c1af93d400?auto=format&fit=crop&w=1200&q=80",
+      "https://images.unsplash.com/photo-1550684848-fac1c5b4e853?auto=format&fit=crop&w=1200&q=80"
+    ];
+    // Use expertId to consistently pick a banner for the same expert
+    const charSum = expertId ? expertId.split('').reduce((acc: number, char: string) => acc + char.charCodeAt(0), 0) : 0;
+    return banners[charSum % banners.length];
+  }, [expertId]);
+
   useEffect(() => {
     if (existingProfile?.level) {
       setExpertLevel(existingProfile.level);
@@ -96,8 +110,8 @@ const BookSessionPage = () => {
   const [errorValue, setErrorValue] = useState<string | null>(null);
 
   useEffect(() => {
-    // Fetch if profile doesn't exist OR if availability is missing (incomplete profile passed from navigation)
-    if ((!profile || !profile.availability) && expertId) {
+    // Always fetch fresh profile data to ensure availability is up-to-date
+    if (expertId) {
       const fetchProfile = async () => {
         try {
           setLoading(true);
@@ -124,7 +138,7 @@ const BookSessionPage = () => {
       };
       fetchProfile();
     }
-  }, [expertId, profile]);
+  }, [expertId]);
 
   // Dynamic Price Calculation
   useEffect(() => {
@@ -311,7 +325,7 @@ const BookSessionPage = () => {
       return `${displayHours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')} ${period}`;
     };
 
-    const sessionDuration = profile.availability.sessionDuration || 60;
+
     const generatedSlots: { time: string; available: boolean }[] = [];
 
     weeklyRanges.forEach((range: { from: string; to: string }) => {
@@ -330,8 +344,8 @@ const BookSessionPage = () => {
         const isToday = date.toDateString() === now.toDateString();
         const currentTimeMinutes = now.getHours() * 60 + now.getMinutes();
 
-        // Buffer of 30 mins for "now"
-        if (isToday && currentMinutes <= (currentTimeMinutes + 30)) {
+        // Show all future slots, including those starting right now
+        if (isToday && currentMinutes < currentTimeMinutes) {
           currentMinutes += sessionDuration;
           continue;
         }
@@ -425,18 +439,7 @@ const BookSessionPage = () => {
   };
 
   // LinkedIn-style Profile Header
-  const bannerImage = useMemo(() => {
-    const banners = [
-      "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&w=1200&q=80",
-      "https://images.unsplash.com/photo-1557683316-973673baf926?auto=format&fit=crop&w=1200&q=80",
-      "https://images.unsplash.com/photo-1508615039623-a25605d2b022?auto=format&fit=crop&w=1200&q=80",
-      "https://images.unsplash.com/photo-1614850523296-d8c1af93d400?auto=format&fit=crop&w=1200&q=80",
-      "https://images.unsplash.com/photo-1550684848-fac1c5b4e853?auto=format&fit=crop&w=1200&q=80"
-    ];
-    // Use expertId to consistently pick a banner for the same expert
-    const charSum = expertId ? expertId.split('').reduce((acc: number, char: string) => acc + char.charCodeAt(0), 0) : 0;
-    return banners[charSum % banners.length];
-  }, [expertId]);
+
 
   const ProfileHeader = () => (
     <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
