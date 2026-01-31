@@ -5,8 +5,7 @@ const reviewSchema = new mongoose.Schema(
     {
         // We use String to match the Session.js schema which uses String UUIDs/IDs
         sessionId: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'Session',
+            type: String,
             required: true,
             index: true
         },
@@ -72,4 +71,5 @@ const reviewSchema = new mongoose.Schema(
 // Compound index to prevent duplicate reviews by the same role for the same session
 reviewSchema.index({ sessionId: 1, reviewerRole: 1 }, { unique: true });
 
-export default mongoose.model("Review", reviewSchema);
+// Use 'ReviewDetails' to avoid conflict with potential cached 'Review' model in memory
+export default mongoose.model("ReviewDetails", reviewSchema, "reviews");

@@ -13,6 +13,9 @@ if (!GOOGLE_CLIENT_ID) {
   console.error("CRITICAL: GOOGLE_CLIENT_ID is not defined in environment variables.");
 }
 
+const JWT_SECRET = process.env.JWT_SECRET || 'fallback_jwt_secret';
+const REFRESH_TOKEN_SECRET = process.env.REFRESH_TOKEN_SECRET || 'fallback_refresh_secret';
+
 // ... imports ...
 
 export const verifyGoogleToken = async (req, res) => {
@@ -343,5 +346,134 @@ export const getProfile = async (req, res) => {
   } catch (error) {
     console.error("Error getting profile:", error);
     res.status(500).json({ message: "Error getting profile", error: error.message });
+  }
+};
+
+/* -------------------- OTP SYSTEM -------------------- */
+import { sendEmail } from "../services/emailService.js";
+
+// Send OTP
+export const sendOtp = async (req, res) => {
+  const { email, type } = req.body; // type can be 'register' or 'reset'
+
+  if (!email) {
+    return res.status(400).json({ message: "Email is required" });
+  }
+
+  try {
+    const user = await User.findOne({ email: email.toLowerCase() });
+
+    if (type === 'register' && user) {
+      return res.status(400).json({ message: "User already exists" });
+    }
+
+    if (type === 'reset' && !user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Generate 6 digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000);
+
+    // Save to DB
+    await Otp.create({
+      email: email.toLowerCase(),
+      otp,
+      expires: new Date(Date.now() + 5 * 60 * 1000) // 5 minutes
+    });
+
+    // Send Email
+    const subject = type === 'register' ? "BenchMock Registration OTP" : "BenchMock Password Reset OTP";
+    const html = `
+      <div style="font-family: Arial, sans-serif; padding: 20px; color: #333;">
+        <h2 style="color: #2563eb;">${subject}</h2>
+        <p>Your OTP is:</p>
+        <h1 style="background: #f3f4f6; padding: 10px; display: inline-block; letter-spacing: 5px;">${otp}</h1>
+        <p>This OTP is valid for 5 minutes.</p>
+        <p>If you did not request this, please ignore this email.</p>
+        <br>
+        <p>Best regards,<br>BenchMock Team</p>
+      </div>
+    `;
+
+    await sendEmail({ to: email, subject, html });
+
+    res.json({ success: true, message: "OTP sent successfully" });
+
+  } catch (error) {
+    console.error("Send OTP Error:", error);
+    res.status(500).json({ message: "Error sending OTP", error: error.message });
+  }
+};
+
+// Verify OTP
+export const verifyOtp = async (req, res) => {
+  const { email, otp } = req.body;
+
+  if (!email || !otp) {
+    return res.status(400).json({ message: "Email and OTP are required" });
+  }
+
+  try {
+    // Check latest OTP
+    const record = await Otp.findOne({ email: email.toLowerCase() }).sort({ createdAt: -1 });
+
+    if (!record) {
+      return res.status(400).json({ message: "OTP expired or invalid" });
+    }
+
+    if (record.otp !== parseInt(otp)) {
+      return res.status(400).json({ message: "Invalid OTP" });
+    }
+
+    if (record.expires < Date.now()) {
+      return res.status(400).json({ message: "OTP expired" });
+    }
+
+    res.json({ success: true, message: "OTP verified successfully" });
+
+  } catch (error) {
+    console.error("Verify OTP Error:", error);
+    res.status(500).json({ message: "Error verifying OTP" });
+  }
+};
+
+// Reset Password
+export const resetPassword = async (req, res) => {
+  const { email, otp, newPassword } = req.body;
+
+  if (!email || !otp || !newPassword) {
+    return res.status(400).json({ message: "All fields are required" });
+  }
+
+  try {
+    // 1. Verify OTP again
+    const record = await Otp.findOne({ email: email.toLowerCase() }).sort({ createdAt: -1 });
+
+    if (!record || record.otp !== parseInt(otp) || record.expires < Date.now()) {
+      return res.status(400).json({ message: "Invalid or expired OTP" });
+    }
+
+    // 2. Hash New Password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // 3. Update User
+    const user = await User.findOneAndUpdate(
+      { email: email.toLowerCase() },
+      { password: hashedPassword },
+      { new: true }
+    );
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // 4. Cleanup OTPs
+    await Otp.deleteMany({ email: email.toLowerCase() });
+
+    res.json({ success: true, message: "Password reset successfully" });
+
+  } catch (error) {
+    console.error("Reset Password Error:", error);
+    res.status(500).json({ message: "Error resetting password" });
   }
 };

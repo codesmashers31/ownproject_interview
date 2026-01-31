@@ -278,11 +278,27 @@ const BookSessionPage = () => {
 
     if (isBreakDate) return [];
 
-    const dayName = date.toLocaleDateString('en-US', { weekday: 'short' }).toLowerCase();
-    const weeklyRanges = profile.availability.weekly?.[dayName] || [];
+    // Robust Day Matching (mon, Mon, Monday, etc.)
+    const weekly = profile.availability.weekly || {};
+    const dayShort = date.toLocaleDateString('en-US', { weekday: 'short' }).toLowerCase(); // mon
+    const dayLong = date.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();   // monday
+
+    const availableKey = Object.keys(weekly).find(key => {
+      const k = key.toLowerCase();
+      return k === dayShort || k === dayLong;
+    });
+
+    const weeklyRanges = availableKey ? weekly[availableKey] : [];
+
+    console.log(`[Debug] Date: ${date.toDateString()}, DayShort: ${dayShort}, AvailableKey: ${availableKey}, Ranges:`, weeklyRanges);
+
+    if (!weeklyRanges || weeklyRanges.length === 0) return [];
 
     const parseTimeToMinutes = (timeStr: string) => {
-      const [hours, minutes] = timeStr.split(':').map(Number);
+      const parts = timeStr.split(':');
+      if (parts.length < 2) return 0;
+      const hours = parseInt(parts[0], 10);
+      const minutes = parseInt(parts[1], 10);
       return hours * 60 + minutes;
     };
 
@@ -314,7 +330,8 @@ const BookSessionPage = () => {
         const isToday = date.toDateString() === now.toDateString();
         const currentTimeMinutes = now.getHours() * 60 + now.getMinutes();
 
-        if (isToday && currentMinutes <= currentTimeMinutes) {
+        // Buffer of 30 mins for "now"
+        if (isToday && currentMinutes <= (currentTimeMinutes + 30)) {
           currentMinutes += sessionDuration;
           continue;
         }
@@ -325,8 +342,12 @@ const BookSessionPage = () => {
 
         const isBooked = bookedSessions.some(session => {
           if (session.status === 'cancelled') return false;
+          // Robust date parsing
           const sStart = new Date(session.startTime);
           const sEnd = new Date(session.endTime);
+
+          if (isNaN(sStart.getTime()) || isNaN(sEnd.getTime())) return false;
+
           const slotEndMinutes = currentMinutes + sessionDuration;
           const slotEndDate = new Date(date);
           slotEndDate.setHours(Math.floor(slotEndMinutes / 60), slotEndMinutes % 60, 0, 0);
@@ -345,6 +366,7 @@ const BookSessionPage = () => {
       }
     });
 
+    console.log(`[Debug] Generated Slots for ${date.toDateString()}:`, generatedSlots);
     return generatedSlots.sort((a, b) => a.time.localeCompare(b.time));
   };
 

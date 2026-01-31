@@ -63,54 +63,43 @@ const PaymentPage: React.FC = () => {
   const handlePaymentSuccess = async (response: any) => {
     try {
       setIsProcessing(true);
-      // 1. Verify Payment on Backend
+      // 1. Verify Payment & Create Session on Backend
+      let startTimeISO = new Date().toISOString();
+      let endTimeISO = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+
+      if (bookingDetails?.date && bookingDetails?.slot?.time) {
+        const dateObj = new Date(bookingDetails.date);
+        const [startStr] = bookingDetails.slot.time.split(" - ");
+        const [time, period] = startStr.split(" ");
+        let [hours, minutes] = time.split(":").map(Number);
+        if (period === "PM" && hours !== 12) hours += 12;
+        if (period === "AM" && hours === 12) hours = 0;
+        dateObj.setHours(hours, minutes, 0, 0);
+        startTimeISO = dateObj.toISOString();
+        const duration = bookingDetails.duration || 60;
+        endTimeISO = new Date(dateObj.getTime() + duration * 60000).toISOString();
+      }
+
       const verifyResponse = await axios.post('/api/payment/verify-payment', {
         razorpay_order_id: response.razorpay_order_id,
         razorpay_payment_id: response.razorpay_payment_id,
         razorpay_signature: response.razorpay_signature,
-      });
-
-      if (verifyResponse.data.success) {
-        // 2. Create Session
-        let startTimeISO = new Date().toISOString();
-        let endTimeISO = new Date(Date.now() + 60 * 60 * 1000).toISOString();
-
-        if (bookingDetails?.date && bookingDetails?.slot?.time) {
-          const dateObj = new Date(bookingDetails.date);
-          const [startStr] = bookingDetails.slot.time.split(" - ");
-          const [time, period] = startStr.split(" ");
-          let [hours, minutes] = time.split(":").map(Number);
-          if (period === "PM" && hours !== 12) hours += 12;
-          if (period === "AM" && hours === 12) hours = 0;
-          dateObj.setHours(hours, minutes, 0, 0);
-          startTimeISO = dateObj.toISOString();
-          const duration = bookingDetails.duration || 60;
-          endTimeISO = new Date(dateObj.getTime() + duration * 60000).toISOString();
-        }
-
-        const sessionPayload = {
+        bookingDetails: {
           expertId: bookingDetails?.expertId,
           candidateId: user?.id || user?.userId,
           startTime: startTimeISO,
           endTime: endTimeISO,
           price: orderSummary.total,
           topics: [bookingDetails?.category || "General Mock Interview"],
-          status: "confirmed",
-          paymentDetails: {
-            orderId: response.razorpay_order_id,
-            paymentId: response.razorpay_payment_id
-          }
-        };
-
-        const sessionResponse = await axios.post('/api/sessions', sessionPayload);
-
-        if (sessionResponse.data?.success) {
-          setPaymentStatus("success");
-          setTransactionId(response.razorpay_payment_id);
-          setShowSuccessModal(true);
-        } else {
-          throw new Error("Failed to record session.");
+          duration: bookingDetails?.duration,
+          notes: "Booked via Payment Page"
         }
+      });
+
+      if (verifyResponse.data.success) {
+        setPaymentStatus("success");
+        setTransactionId(response.razorpay_payment_id);
+        setShowSuccessModal(true);
       } else {
         throw new Error("Payment verification failed.");
       }

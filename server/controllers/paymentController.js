@@ -39,29 +39,64 @@ export const createOrder = async (req, res) => {
     }
 };
 
+import * as sessionService from '../services/sessionService.js';
+
 export const verifyPayment = async (req, res) => {
     try {
-        const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
+        const { razorpay_order_id, razorpay_payment_id, razorpay_signature, bookingDetails, user } = req.body;
+
+        let isVerified = false;
 
         // Bypass for dummy simulation
         if (razorpay_payment_id.startsWith('dummy_')) {
-            return res.status(200).json({
-                success: true,
-                message: 'Payment verified successfully (Simulation)',
-            });
+            isVerified = true;
+        } else {
+            const sign = razorpay_order_id + '|' + razorpay_payment_id;
+            const expectedSign = crypto
+                .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET || 'placeholder_secret')
+                .update(sign.toString())
+                .digest('hex');
+
+            if (razorpay_signature === expectedSign) {
+                isVerified = true;
+            }
         }
 
-        const sign = razorpay_order_id + '|' + razorpay_payment_id;
-        const expectedSign = crypto
-            .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET || 'placeholder_secret')
-            .update(sign.toString())
-            .digest('hex');
+        if (isVerified) {
+            // Create Session Context
+            if (bookingDetails) {
+                const startTime = new Date(bookingDetails.startTime);
+                const endTime = new Date(bookingDetails.endTime);
 
-        if (razorpay_signature === expectedSign) {
-            // Payment is verified
+                // Generate a Session ID similar to sessionController
+                const sessionId = `session-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+                const sessionData = {
+                    sessionId,
+                    expertId: bookingDetails.expertId,
+                    candidateId: bookingDetails.candidateId,
+                    startTime,
+                    endTime,
+                    topics: bookingDetails.topics || ["General Mock Interview"],
+                    price: bookingDetails.price,
+                    status: 'confirmed', // Paid = Confirmed
+                    duration: bookingDetails.duration || 60,
+                    notes: bookingDetails.notes || ""
+                };
+
+                const session = await sessionService.createSession(sessionData);
+
+                return res.status(200).json({
+                    success: true,
+                    message: 'Payment verified and session created successfully',
+                    data: session,
+                    sessionId: session.sessionId
+                });
+            }
+
             res.status(200).json({
                 success: true,
-                message: 'Payment verified successfully',
+                message: 'Payment verified successfully (No booking details provided)',
             });
         } else {
             res.status(400).json({

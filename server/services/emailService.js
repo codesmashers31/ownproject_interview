@@ -27,13 +27,14 @@ console.log("Email Service Configuration:", {
 const transporter = nodemailer.createTransport(transporterConfig);
 
 // Verify connection configuration on startup
-transporter.verify(function (error, success) {
-    if (error) {
-        console.error("Email Service Verification Error:", error);
-    } else {
-        console.log("Email Service: Ready to send emails");
-    }
-});
+// Verify connection configuration on startup
+// transporter.verify(function (error, success) {
+//     if (error) {
+//         console.error("Email Service Verification Error:", error);
+//     } else {
+//         console.log("Email Service: Ready to send emails");
+//     }
+// });
 
 export const sendEmail = async ({ to, subject, html }) => {
     try {

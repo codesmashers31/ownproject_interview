@@ -185,8 +185,8 @@ export const getSessionsByCandidate = async (req, res) => {
                 }
 
                 // Match Review - Expert's review for this session
-                const Review = (await import('../models/reviewModel.js')).default;
-                const expertReview = await Review.findOne({ sessionId: session.sessionId, reviewerRole: 'expert' });
+                const ReviewDetails = (await import('../models/reviewModel.js')).default;
+                const expertReview = await ReviewDetails.findOne({ sessionId: session.sessionId, reviewerRole: 'expert' });
 
                 return {
                     ...session.toObject(),
@@ -357,18 +357,18 @@ export const submitReview = async (req, res) => {
         }
 
         // Dynamically import models and services
-        const Review = (await import('../models/reviewModel.js')).default;
+        const ReviewDetails = (await import('../models/reviewModel.js')).default;
         const User = (await import('../models/User.js')).default;
         const sessionService = (await import('../services/sessionService.js'));
         const emailService = (await import('../services/emailService.js'));
 
         // Check if review already exists for this role
-        const existingReview = await Review.findOne({ sessionId, reviewerRole });
+        const existingReview = await ReviewDetails.findOne({ sessionId, reviewerRole });
         if (existingReview) {
             return res.status(400).json({ success: false, message: "Review already submitted for this session" });
         }
 
-        const newReview = new Review({
+        const newReview = new ReviewDetails({
             sessionId,
             expertId,      // Passed from frontend
             candidateId,   // Passed from frontend
