@@ -2,11 +2,22 @@ import Session from '../models/Session.js';
 import User from '../models/User.js';
 
 export const getSessionsForUser = async (userId, role) => {
-    // Strict query based on role
-    const query = role === 'expert' ? { expertId: userId } : { candidateId: userId };
-
     const mongoose = (await import('mongoose')).default;
     const Expert = (await import('../models/expertModel.js')).default;
+
+    let query = {};
+
+    if (role === 'expert') {
+        // Find the expert profile associated with this user
+        const expertDoc = await Expert.findOne({ userId: userId });
+        const possibleIds = [userId];
+        if (expertDoc) {
+            possibleIds.push(expertDoc._id);
+        }
+        query = { expertId: { $in: possibleIds } };
+    } else {
+        query = { candidateId: userId };
+    }
 
     // 1. Fetch raw sessions
     const sessions = await Session.find({
