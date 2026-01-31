@@ -14,36 +14,32 @@ export default function attachSignaling(io) {
 
       const { meetingId, role, userId } = initialPayload;
       try {
-        // Verify with DB
+        // Special handling for 'demo' meeting
+        if (meetingId === 'demo') {
+          // Allow bypass
+        } else {
+          // Verify with DB
+          // Use getOrCreateMeeting to handle first-time joins (Lazy Init)
+          const meeting = await meetingService.getOrCreateMeeting(meetingId);
+          if (!meeting) {
+            socket.emit("error", "Meeting not found");
+            return;
+          }
+          if (meeting.status === 'finished') {
+            meeting.status = 'live';
+            meeting.activeUsers = [];
+            await meeting.save();
+          }
 
-        const meeting = await meetingService.getMeeting(meetingId);
-
-
-        if (!meeting) {
-
-          socket.emit("error", "Meeting not found");
-          return;
+          // Verify Auth
+          const isAuthorized = await authUtils.canJoinMeeting(meeting, userId);
+          if (!isAuthorized) {
+            socket.emit("error", "Unauthorized");
+            return;
+          }
+          // Update DB - user joined
+          await meetingService.addUserToMeeting(meetingId, userId);
         }
-        if (meeting.status === 'finished') {
-
-          meeting.status = 'live';
-          meeting.activeUsers = [];
-          await meeting.save();
-        }
-
-
-        // Verify Auth
-        const isAuthorized = authUtils.canJoinMeeting(meeting, userId);
-
-
-        if (!isAuthorized) {
-
-          socket.emit("error", "Unauthorized");
-          return;
-        }
-
-        // Update DB - user joined
-        await meetingService.addUserToMeeting(meetingId, userId);
 
         // Update Memory Map
         let room = liveRooms.get(meetingId);
