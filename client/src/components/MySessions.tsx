@@ -289,7 +289,9 @@ const MySessions = () => {
 
   const handleJoin = (session: Session) => {
     if (session.status === 'Upcoming' || session.status === 'Confirmed') {
-      navigate(`/live-meeting?meetingId=${session.meetLink || 'demo'}`);
+      navigate(`/live-meeting?meetingId=${session.meetLink || 'demo'}`, {
+        state: { role: 'candidate' }
+      });
     }
   };
 
