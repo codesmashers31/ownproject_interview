@@ -82,7 +82,89 @@ export const getSession = async (req, res) => {
         if (!session) {
             return res.status(404).json({ message: "Session not found" });
         }
-        res.json(session);
+
+        // --- ENRICHMENT LOGIC (Single Session) ---
+        const Expert = (await import('../models/expertModel.js')).default;
+        const User = (await import('../models/User.js')).default;
+        const mongoose = (await import('mongoose')).default;
+
+        let expert = null;
+        let candidate = null;
+        const lookupId = session.expertId;
+
+        try {
+            if (mongoose.Types.ObjectId.isValid(lookupId)) {
+                const oid = new mongoose.Types.ObjectId(lookupId);
+                expert = await Expert.findOne({ userId: oid }).populate('userId');
+                if (!expert) expert = await Expert.findById(oid).populate('userId');
+            }
+            if (!expert && typeof lookupId === 'string' && lookupId.includes('@')) {
+                const userByEmail = await User.findOne({ email: lookupId.toLowerCase() });
+                if (userByEmail) {
+                    expert = await Expert.findOne({ userId: userByEmail._id }).populate('userId');
+                }
+            }
+        } catch (e) {
+            console.error("Expert lookup failed", e);
+        }
+
+        // Candidate Lookup
+        try {
+            if (mongoose.Types.ObjectId.isValid(session.candidateId)) {
+                candidate = await User.findById(session.candidateId);
+            } else if (typeof session.candidateId === 'string' && session.candidateId.includes('@')) {
+                candidate = await User.findOne({ email: session.candidateId.toLowerCase() });
+            }
+        } catch (e) {
+            console.error("Candidate lookup failed", e);
+        }
+
+        // Details construction
+        let expertName = 'Unknown Expert';
+        let expertRole = 'Expert';
+        let expertCompany = 'N/A';
+        let expertImage = null;
+
+        if (expert) {
+            expertName = expert.personalInformation?.userName || expert.userId?.name || 'Expert';
+            expertRole = expert.professionalDetails?.title || 'Expert';
+            expertCompany = expert.professionalDetails?.company || 'N/A';
+            expertImage = expert.profileImage || expert.userId?.profileImage || null;
+        } else {
+            // Fallback to User if Expert Profile missing
+            try {
+                if (mongoose.Types.ObjectId.isValid(lookupId)) {
+                    const u = await User.findById(lookupId);
+                    if (u) {
+                        expertName = u.name;
+                        expertImage = u.profileImage;
+                    }
+                } else if (typeof lookupId === 'string') {
+                    expertName = lookupId;
+                }
+            } catch (e) { }
+        }
+
+        const candidateName = candidate?.name || (typeof session.candidateId === 'string' ? session.candidateId : 'Candidate');
+        const candidateImage = candidate?.profileImage || null;
+        const candidateEmail = candidate?.email || "";
+
+        const enrichedSession = {
+            ...session.toObject(),
+            expertDetails: {
+                name: expertName,
+                role: expertRole,
+                company: expertCompany,
+                profileImage: expertImage
+            },
+            candidateDetails: {
+                name: candidateName,
+                email: candidateEmail,
+                profileImage: candidateImage
+            }
+        };
+
+        res.json(enrichedSession);
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
