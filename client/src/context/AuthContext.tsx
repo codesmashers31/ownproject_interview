@@ -45,7 +45,8 @@ export const AuthProvider: React.FC<Props> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   // Initialize loading based on whether we think the user is logged in
-  const [isLoading, setIsLoading] = useState<boolean>(!!localStorage.getItem('isLoggedIn'));
+  // Start with loading as true to ensure we check auth before rendering any protected routes
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
   // Attach token to axios defaults if present
   useEffect(() => {
@@ -106,8 +107,9 @@ export const AuthProvider: React.FC<Props> = ({ children }) => {
   // Check auth status on app load (Silent Login)
   useEffect(() => {
     const init = async () => {
-      // Optimization: If no auth hint, skip API calls and load as guest immediately
-      if (!localStorage.getItem('isLoggedIn')) {
+      const isLoggedInHint = localStorage.getItem('isLoggedIn');
+      
+      if (!isLoggedInHint) {
         setIsLoading(false);
         return;
       }
