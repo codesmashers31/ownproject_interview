@@ -353,11 +353,16 @@ const BookSessionPage = () => {
       console.log(`[Debug] Checking range ${range.from}-${range.to} (${currentMinutes}-${endMinutes}) with duration ${duration}`);
 
       while (currentMinutes + duration <= endMinutes) {
-        // Validation: Mark past slots as unavailable instead of hiding them
+        // Validation: HIDE past slots for "Today"
         const now = new Date();
         const isToday = date.toDateString() === now.toDateString();
         const currentTimeMinutes = now.getHours() * 60 + now.getMinutes();
-        const isPast = isToday && currentMinutes < currentTimeMinutes;
+
+        // Skip past slots entirely
+        if (isToday && currentMinutes < currentTimeMinutes) {
+          currentMinutes += duration;
+          continue;
+        }
 
         const slotStartMinutes = currentMinutes;
         const slotDate = new Date(date);
@@ -383,7 +388,7 @@ const BookSessionPage = () => {
 
         generatedSlots.push({
           time: `${slotStart} - ${slotEnd}`,
-          available: !isBooked && !isPast
+          available: !isBooked
         });
         currentMinutes += duration;
       }
@@ -603,34 +608,32 @@ const BookSessionPage = () => {
         </div>
       </div>
 
-      {/* Date Picker - Compact Horizontal with Floating Arrows */}
-      <div className="relative group/carousel px-0">
-        {/* Left Arrow Button */}
+      {/* Date Picker - Modern & Bold */}
+      <div className="relative group/carousel px-0 mt-4 mb-6">
+        {/* Floating Arrows - Always visible for better UX */}
         <button
           type="button"
           onClick={() => scrollCarousel('left')}
-          className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-2 z-30 p-2 rounded-full bg-white shadow-lg text-gray-700 border border-gray-100 opacity-0 group-hover/carousel:opacity-100 group-hover/carousel:translate-x-1 transition-all duration-300 hover:bg-[#004fcb] hover:text-white"
+          className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-3 z-30 p-2 rounded-full bg-white shadow-lg border border-gray-100 text-[#004fcb] hover:bg-[#004fcb] hover:text-white transition-all duration-300"
         >
-          <ChevronLeft size={16} />
+          <ChevronLeft size={20} strokeWidth={2.5} />
         </button>
 
-        {/* Right Arrow Button */}
         <button
           type="button"
           onClick={() => scrollCarousel('right')}
-          className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-2 z-30 p-2 rounded-full bg-white shadow-lg text-gray-700 border border-gray-100 opacity-0 group-hover/carousel:opacity-100 group-hover/carousel:-translate-x-1 transition-all duration-300 hover:bg-[#004fcb] hover:text-white"
+          className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-3 z-30 p-2 rounded-full bg-white shadow-lg border border-gray-100 text-[#004fcb] hover:bg-[#004fcb] hover:text-white transition-all duration-300"
         >
-          <ChevronRight size={16} />
+          <ChevronRight size={20} strokeWidth={2.5} />
         </button>
 
         <div
           ref={carouselRef}
-          className="flex gap-2.5 overflow-x-auto pb-4 pt-4 px-2 scrollbar-none no-scrollbar snap-x snap-mandatory scroll-smooth"
+          className="flex gap-3 overflow-x-auto pb-4 pt-2 px-2 scrollbar-none no-scrollbar snap-x snap-mandatory scroll-smooth"
         >
           {dates.map((date, index) => {
             const isToday = new Date().toDateString() === date.toDateString();
-            // isPast is no longer needed in the loop as we filtered 'dates' array, but let's keep logic clean
-            const isPast = false;
+            const isPast = false; // Already filtered
 
             return (
               <button
@@ -641,29 +644,26 @@ const BookSessionPage = () => {
                   setSelectedDate(index);
                   setSelectedSlot(null);
                 }}
-                className={`flex flex-col items-center py-3 px-4 rounded-xl min-w-[76px] transition-all border shrink-0 snap-center relative ${selectedDate === index
-                  ? "bg-[#004fcb] border-[#004fcb] text-white shadow-xl ring-4 ring-blue-50 scale-105 z-10"
+                className={`flex flex-col items-center py-4 px-5 rounded-2xl min-w-[85px] transition-all duration-300 shrink-0 snap-center relative border ${selectedDate === index
+                  ? "bg-[#004fcb] border-[#004fcb] text-white shadow-lg shadow-blue-900/20 scale-105 z-10"
                   : isToday
-                    ? "bg-white border-blue-200 text-gray-900 shadow-md ring-2 ring-blue-50"
-                    : isPast
-                      ? "bg-gray-50 border-gray-100 text-gray-300 cursor-not-allowed"
-                      : "bg-white border-gray-200 text-gray-600 hover:border-[#004fcb] hover:bg-blue-50/10"
+                    ? "bg-white border-blue-200 text-gray-900 shadow-sm ring-1 ring-blue-50"
+                    : "bg-white border-gray-100 text-gray-500 hover:border-blue-300 hover:shadow-md hover:-translate-y-0.5"
                   }`}
               >
                 {isToday && (
-                  <span className={`absolute -top-2 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-tighter shadow-sm whitespace-nowrap z-20 ${selectedDate === index ? "bg-white text-[#004fcb]" : "bg-[#004fcb] text-white"
+                  <span className={`absolute -top-3 left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider shadow-sm whitespace-nowrap z-20 ${selectedDate === index ? "bg-white text-[#004fcb] border border-blue-100" : "bg-[#004fcb] text-white"
                     }`}>
-                    ✨ Today
+                    Today
                   </span>
                 )}
-                <span className={`text-[10px] font-bold uppercase tracking-wider mb-1 ${selectedDate === index ? "text-blue-100" : "text-gray-400"}`}>
+                <span className={`text-[11px] font-bold uppercase tracking-widest mb-1.5 ${selectedDate === index ? "text-blue-100" : "text-gray-400"}`}>
                   {date.toLocaleDateString('en-US', { weekday: 'short' })}
                 </span>
-                <span className="text-xl font-black leading-none mb-1">
+                <span className="text-2xl font-black leading-none mb-1.5 tracking-tight">
                   {date.getDate()}
                 </span>
-                <div className={`w-6 h-0.5 rounded-full mb-1 ${selectedDate === index ? "bg-white/40" : isToday ? "bg-blue-200" : "bg-gray-100"}`}></div>
-                <span className={`text-[9px] font-bold uppercase ${selectedDate === index ? "text-blue-200" : "text-gray-400"}`}>
+                <span className={`text-[10px] font-bold uppercase ${selectedDate === index ? "text-blue-100" : "text-gray-400"}`}>
                   {date.toLocaleDateString('en-US', { month: 'short' })}
                 </span>
               </button>
@@ -672,28 +672,55 @@ const BookSessionPage = () => {
         </div>
       </div>
 
-      {/* Slots Grid */}
-      <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-[400px] overflow-y-auto pr-1">
+      {/* Slots Grid - Gen Z / Modern */}
+      <div className="flex items-center justify-between mb-4 px-1">
+        <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2">
+          Available Times
+          <span className="px-2 py-0.5 rounded-full bg-blue-50 text-[#004fcb] text-[10px] font-black border border-blue-100">{currentSlots.length}</span>
+        </h3>
+      </div>
+
+      <div className="grid grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-3 max-h-[400px] overflow-y-auto pr-1 pb-2">
         {currentSlots.length > 0 ? (
-          currentSlots.map((slot, index) => (
-            <button
-              key={index}
-              disabled={!slot.available}
-              onClick={() => setSelectedSlot(slot)}
-              className={`py-2.5 px-3 rounded-lg border text-xs font-bold transition-all text-center ${slot.available
-                ? selectedSlot?.time === slot.time
-                  ? "bg-blue-50 border-[#004fcb] text-[#004fcb] ring-1 ring-[#004fcb]"
-                  : "bg-white border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-400"
-                : "bg-gray-50 border-gray-100 text-gray-300 cursor-not-allowed"
-                }`}
-            >
-              {slot.time}
-            </button>
-          ))
+          currentSlots.map((slot, index) => {
+            const [start, end] = slot.time.split(' - ');
+            return (
+              <button
+                key={index}
+                disabled={!slot.available}
+                onClick={() => setSelectedSlot(slot)}
+                className={`group relative flex flex-col items-center justify-center py-4 px-4 rounded-xl border transition-all duration-200 ${!slot.available
+                  ? "bg-gray-50 border-gray-100 opacity-60 cursor-not-allowed"
+                  : selectedSlot?.time === slot.time
+                    ? "bg-[#004fcb] border-[#004fcb] text-white shadow-lg shadow-blue-600/20 scale-[1.02] ring-2 ring-blue-100"
+                    : "bg-white border-gray-200 text-gray-700 hover:border-[#004fcb] hover:shadow-md hover:-translate-y-0.5 hover:text-[#004fcb]"
+                  }`}
+              >
+                {!slot.available && (
+                  <div className="absolute inset-0 flex items-center justify-center rounded-xl z-20">
+                    <div className="bg-gray-100/90 px-2 py-1 rounded text-[10px] font-bold text-gray-400 uppercase tracking-wider border border-gray-200">
+                      Unavailable
+                    </div>
+                  </div>
+                )}
+                <div className={`flex flex-col items-center leading-none gap-1.5 ${!slot.available ? 'opacity-20 blur-[0.5px]' : ''}`}>
+                  <span className="text-sm font-black tracking-tight">
+                    {start}
+                  </span>
+                  <span className={`text-[10px] font-medium ${selectedSlot?.time === slot.time ? "text-blue-100" : "text-gray-400 group-hover:text-blue-400"}`}>
+                    To {end}
+                  </span>
+                </div>
+              </button>
+            );
+          })
         ) : (
-          <div className="col-span-2 py-8 text-center bg-gray-50 rounded-xl border border-dashed border-gray-200">
-            <Calendar className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-            <p className="text-sm text-gray-500">No slots available</p>
+          <div className="col-span-full py-12 text-center bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200 flex flex-col items-center justify-center">
+            <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm mb-3">
+              <Calendar className="w-6 h-6 text-gray-400" />
+            </div>
+            <p className="text-gray-900 font-bold mb-1">No slots available</p>
+            <p className="text-xs text-gray-500">Try selecting another date or viewing next month</p>
           </div>
         )}
       </div>
