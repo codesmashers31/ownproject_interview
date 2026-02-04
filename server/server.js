@@ -43,9 +43,12 @@ const httpServer = createServer(app);
 const allowedOrigins = [
   "http://localhost:5173",
   "http://localhost:5174",
+  "http://localhost:3000",
   "https://interviewmock.vercel.app",
-  "https://ownproject-interview.vercel.app", // Added new Vercel deployment
-  "https://interviewmock.onrender.com", // Added Render deployment
+  "https://www.interviewmock.vercel.app",
+  "https://ownproject-interview.vercel.app",
+  "https://www.ownproject-interview.vercel.app",
+  "https://interviewmock.onrender.com",
   process.env.CLIENT_URL,
 ].filter(Boolean);
 
@@ -65,8 +68,18 @@ app.set('trust proxy', 1);
 
 const io = new Server(httpServer, {
   cors: {
-    origin: allowedOrigins,
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    origin: (requestOrigin, callback) => {
+      if (!requestOrigin) return callback(null, true);
+
+      // Check against allowedOrigins
+      if (allowedOrigins.includes(requestOrigin)) {
+        return callback(null, true);
+      }
+
+      console.log(`[CORS] Blocked origin: ${requestOrigin}`);
+      callback(new Error('Not allowed by CORS'));
+    },
+    methods: ["GET", "POST"],
     credentials: true,
   },
 });
