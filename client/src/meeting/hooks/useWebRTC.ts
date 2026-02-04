@@ -253,6 +253,58 @@ export function useWebRTC(onIceCandidateSend: (candidate: RTCIceCandidate) => vo
         };
     }, [cleanup]);
 
+    // 8. Screen Share Logic
+    const startScreenShare = useCallback(async () => {
+        try {
+            const screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+            const screenTrack = screenStream.getVideoTracks()[0];
+
+            if (localStream && pcRef.current) {
+                const videoSender = pcRef.current.getSenders().find(s => s.track?.kind === 'video');
+                if (videoSender) {
+                    await videoSender.replaceTrack(screenTrack);
+                }
+
+                // Update local stream to show screen share locally
+                const newStream = new MediaStream([screenTrack, ...localStream.getAudioTracks()]);
+                setLocalStream(newStream);
+
+                // Handle screen share stop (user clicks browser "Stop Sharing")
+                screenTrack.onended = () => {
+                    stopScreenShare();
+                };
+            }
+            return screenStream;
+        } catch (error) {
+            console.error("Error starting screen share:", error);
+            return null;
+        }
+    }, [localStream]);
+
+    const stopScreenShare = useCallback(async () => {
+        try {
+            // Re-acquire camera
+            const cameraStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+            const videoTrack = cameraStream.getVideoTracks()[0];
+
+            if (localStream && pcRef.current) {
+                const videoSender = pcRef.current.getSenders().find(s => s.track?.kind === 'video');
+                if (videoSender) {
+                    await videoSender.replaceTrack(videoTrack);
+                }
+
+                // Restore local stream
+                setLocalStream(cameraStream);
+
+                // Ensure mic/camera state is respected
+                if (!isMicOn) cameraStream.getAudioTracks().forEach(t => t.enabled = false);
+                if (!isCameraOn) cameraStream.getVideoTracks().forEach(t => t.enabled = false);
+            }
+        } catch (error) {
+            console.error("Error stopping screen share:", error);
+        }
+    }, [localStream, isMicOn, isCameraOn]);
+
     return {
         localStream,
         remoteStream,
@@ -265,6 +317,8 @@ export function useWebRTC(onIceCandidateSend: (candidate: RTCIceCandidate) => vo
         handleReceivedIceCandidate,
         toggleMic,
         toggleCamera,
+        startScreenShare,
+        stopScreenShare,
         cleanup,
         resetPeerConnection,
         connectionState

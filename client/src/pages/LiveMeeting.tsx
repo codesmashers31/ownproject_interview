@@ -25,6 +25,10 @@ const ActiveMeeting = ({ meetingId, role, userId, onLeave, sessionData }: any) =
   const [showSettings, setShowSettings] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
   const [participants, setParticipants] = useState<string[]>([]);
+  const [isRecording, setIsRecording] = useState(false);
+  const [isScreenSharing, setIsScreenSharing] = useState(false);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const recordedChunksRef = useRef<Blob[]>([]);
 
   const hasOfferedRef = useRef(false);
   const sendIceCandidateRef = useRef<((candidate: RTCIceCandidateInit) => void) | null>(null);
@@ -40,7 +44,8 @@ const ActiveMeeting = ({ meetingId, role, userId, onLeave, sessionData }: any) =
   const {
     localStream, remoteStream, isMicOn, isCameraOn, initLocalMedia,
     createOffer, handleReceivedOffer, handleReceivedAnswer, handleReceivedIceCandidate,
-    toggleMic, toggleCamera, cleanup, resetPeerConnection, connectionState
+    toggleMic, toggleCamera, cleanup, resetPeerConnection, connectionState,
+    startScreenShare, stopScreenShare
   } = useWebRTC((candidate) => {
     if (sendIceCandidateRef.current) sendIceCandidateRef.current(candidate);
   });
@@ -54,7 +59,11 @@ const ActiveMeeting = ({ meetingId, role, userId, onLeave, sessionData }: any) =
       hasOfferedRef.current = false;
       console.log("[Signaling] Both users ready, initializing connection sequence...");
       setStatus("Connected (Initializing Media...)");
-      setParticipants(["You", role === 'expert' ? "Candidate" : "Expert"]);
+      // Extract names if available
+      const remoteName = role === 'expert'
+        ? (sessionData?.session?.candidateId?.name || "Candidate")
+        : (sessionData?.session?.expertId?.name || "Expert");
+      setParticipants(["You", remoteName]);
     },
     onOffer: async ({ sdp }) => {
       if (role === 'candidate') {
@@ -158,6 +167,77 @@ const ActiveMeeting = ({ meetingId, role, userId, onLeave, sessionData }: any) =
     }
   };
 
+  // Recording Logic
+  const handleToggleRecord = () => {
+    if (isRecording) {
+      // Stop Recording
+      mediaRecorderRef.current?.stop();
+      setIsRecording(false);
+      toast.success("Recording stopped. Downloading...");
+    } else {
+      // Start Recording
+      const streamToRecord = remoteStream || localStream; // Prefer remote, fallback to local
+      if (!streamToRecord) {
+        toast.error("No stream to record.");
+        return;
+      }
+
+      const options = { mimeType: 'video/webm; codecs=vp9' };
+      if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+        console.warn("VP9 not supported, falling back to default");
+        delete (options as any).mimeType;
+      }
+
+      try {
+        const mediaRecorder = new MediaRecorder(streamToRecord, options);
+        mediaRecorderRef.current = mediaRecorder;
+        recordedChunksRef.current = [];
+
+        mediaRecorder.ondataavailable = (event) => {
+          if (event.data.size > 0) {
+            recordedChunksRef.current.push(event.data);
+          }
+        };
+
+        mediaRecorder.onstop = () => {
+          const blob = new Blob(recordedChunksRef.current, { type: 'video/webm' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.style.display = 'none';
+          a.href = url;
+          a.download = `meeting-recording-${new Date().toISOString()}.webm`;
+          document.body.appendChild(a);
+          a.click();
+          window.URL.revokeObjectURL(url);
+        };
+
+        mediaRecorder.start();
+        setIsRecording(true);
+        toast.success("Recording started");
+      } catch (err) {
+        console.error("Recording error:", err);
+        toast.error("Failed to start recording");
+      }
+    }
+  };
+
+  const handleToggleScreenShare = async () => {
+    if (isScreenSharing) {
+      await stopScreenShare();
+      setIsScreenSharing(false);
+    } else {
+      const stream = await startScreenShare();
+      if (stream) {
+        setIsScreenSharing(true);
+        // Listen for browser "Stop Sharing" button
+        stream.getVideoTracks()[0].onended = () => {
+          stopScreenShare();
+          setIsScreenSharing(false);
+        };
+      }
+    }
+  };
+
   // Toggle helpers
   const toggleChat = () => {
     setShowChat(!showChat);
@@ -196,12 +276,7 @@ const ActiveMeeting = ({ meetingId, role, userId, onLeave, sessionData }: any) =
         </div>
 
         <div className="pointer-events-auto">
-          {status === "Live" && (
-            <div className="flex items-center gap-2 bg-red-500/10 border border-red-500/20 px-3 py-1 rounded-full animate-pulse">
-              <div className="w-2 h-2 rounded-full bg-red-500"></div>
-              <span className="text-xs font-bold text-red-400 tracking-wide uppercase">REC</span>
-            </div>
-          )}
+          {/* Recording indicator removed */}
         </div>
       </div>
 
@@ -223,7 +298,7 @@ const ActiveMeeting = ({ meetingId, role, userId, onLeave, sessionData }: any) =
             {remoteStream ? (
               <div className="relative w-full aspect-video rounded-xl overflow-hidden shadow-2xl ring-1 ring-white/10 group">
                 <VideoTile
-                  name={role === 'expert' ? "Candidate" : "Expert"}
+                  name={participants[1] || (role === 'expert' ? "Candidate" : "Expert")}
                   stream={remoteStream}
                   isMainTile={true}
                   isSpeaking={status === "Live"}
@@ -339,11 +414,21 @@ const ActiveMeeting = ({ meetingId, role, userId, onLeave, sessionData }: any) =
           </button>
 
           <button
-            onClick={() => toast.info("Screen sharing coming soon!")}
-            className="p-4 rounded-full bg-[#3c4043] hover:bg-[#4a4e51] text-white transition-all duration-200"
-            title="Present Screen"
+            onClick={handleToggleScreenShare}
+            className={`p-4 rounded-full transition-all duration-200 ${isScreenSharing ? 'bg-blue-300 text-[#202124]' : 'bg-[#3c4043] hover:bg-[#4a4e51] text-white'}`}
+            title={isScreenSharing ? "Stop Presenting" : "Present Screen"}
           >
             <MonitorUp size={20} />
+          </button>
+
+          <button
+            onClick={handleToggleRecord}
+            className={`p-4 rounded-full transition-all duration-200 ${isRecording ? 'bg-red-500 hover:bg-red-600 text-white animate-pulse' : 'bg-[#3c4043] hover:bg-[#4a4e51] text-white'}`}
+            title={isRecording ? "Stop Recording" : "Record Meeting"}
+          >
+            <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${isRecording ? 'border-white' : 'border-current'}`}>
+              <div className={`w-3 h-3 rounded-full ${isRecording ? 'bg-white' : 'bg-red-500'}`}></div>
+            </div>
           </button>
 
           <button
