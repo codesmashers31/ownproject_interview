@@ -18,6 +18,7 @@ export interface User {
     country?: string;
     bio?: string;
   };
+  role?: string;
 }
 
 interface AuthContextType {
@@ -151,6 +152,7 @@ export const AuthProvider: React.FC<Props> = ({ children }) => {
         phone: userData.personalInfo?.phone || (userData as any).phone || userData.phone,
         // Prefer expert photo if available, otherwise fallback
         profileImage: expertData.photoUrl || userData.profileImage || (userData as any).photoUrl,
+        role: userData.userType || (userData as any).role,
       };
 
       setUser(normalizedUser);
@@ -176,6 +178,7 @@ export const AuthProvider: React.FC<Props> = ({ children }) => {
         ...userData,
         id: userData.userId || userData.id,
         phone: (userData as any).personalInfo?.phone || (userData as any).phone || userData.phone,
+        role: userData.userType || (userData as any).role,
       };
 
       setUser(normalizedUser);
@@ -201,6 +204,7 @@ export const AuthProvider: React.FC<Props> = ({ children }) => {
           ...userData,
           id: userData.userId || userData.id,
           phone: (userData as any).personalInfo?.phone || (userData as any).phone || userData.phone,
+          role: userData.userType || (userData as any).role,
         };
 
         setUser(normalizedUser);
@@ -228,6 +232,7 @@ export const AuthProvider: React.FC<Props> = ({ children }) => {
           ...userData,
           id: userData.userId || userData.id,
           phone: (userData as any).personalInfo?.phone || (userData as any).phone || userData.phone,
+          role: userData.userType || (userData as any).role,
         };
 
         setUser(normalizedUser);
