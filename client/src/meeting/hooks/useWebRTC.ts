@@ -7,6 +7,7 @@ const STUN_SERVERS = {
         { urls: 'stun:stun2.l.google.com:19302' },
         { urls: 'stun:stun3.l.google.com:19302' },
         { urls: 'stun:stun4.l.google.com:19302' },
+        { urls: 'stun:global.stun.twilio.com:3478' }
     ],
 };
 
@@ -15,6 +16,7 @@ export function useWebRTC(onIceCandidateSend: (candidate: RTCIceCandidate) => vo
     const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
     const [isMicOn, setIsMicOn] = useState(true);
     const [isCameraOn, setIsCameraOn] = useState(true);
+    const [connectionState, setConnectionState] = useState<RTCIceConnectionState>('new');
 
     const pcRef = useRef<RTCPeerConnection | null>(null);
     const candidateQueue = useRef<RTCIceCandidateInit[]>([]);
@@ -63,7 +65,8 @@ export function useWebRTC(onIceCandidateSend: (candidate: RTCIceCandidate) => vo
 
         // Monitor Connection State
         pc.oniceconnectionstatechange = () => {
-
+            console.log('[WebRTC] ICE State Change:', pc.iceConnectionState);
+            setConnectionState(pc.iceConnectionState);
         };
 
         pc.onconnectionstatechange = () => {
@@ -263,6 +266,7 @@ export function useWebRTC(onIceCandidateSend: (candidate: RTCIceCandidate) => vo
         toggleMic,
         toggleCamera,
         cleanup,
-        resetPeerConnection
+        resetPeerConnection,
+        connectionState
     };
 }

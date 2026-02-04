@@ -24,7 +24,7 @@ const ActiveMeeting = ({ meetingId, role, userId, onLeave, sessionData }: any) =
   const {
     localStream, remoteStream, isMicOn, isCameraOn, initLocalMedia,
     createOffer, handleReceivedOffer, handleReceivedAnswer, handleReceivedIceCandidate,
-    toggleMic, toggleCamera, cleanup, resetPeerConnection
+    toggleMic, toggleCamera, cleanup, resetPeerConnection, connectionState
   } = useWebRTC((candidate) => {
     if (sendIceCandidateRef.current) sendIceCandidateRef.current(candidate);
   });
@@ -36,7 +36,8 @@ const ActiveMeeting = ({ meetingId, role, userId, onLeave, sessionData }: any) =
     onBothReady: () => {
       setIsBothReady(true);
       hasOfferedRef.current = false;
-      setStatus("Connected");
+      console.log("[Signaling] Both users ready, initializing connection sequence...");
+      setStatus("Connected (Initializing Media...)");
     },
     onOffer: async ({ sdp }) => {
       if (role === 'candidate') {
@@ -83,12 +84,29 @@ const ActiveMeeting = ({ meetingId, role, userId, onLeave, sessionData }: any) =
   }, []);
 
   useEffect(() => {
+    // Sync WebRTC state to UI status if connected/failed
+    if (connectionState === 'connected' || connectionState === 'completed') {
+      setStatus("Live Call");
+    } else if (connectionState === 'failed' || connectionState === 'disconnected') {
+      setStatus("Connection Failed/Lost");
+    } else if (connectionState === 'checking') {
+      setStatus("Establishing P2P Path...");
+    }
+  }, [connectionState]);
+
+  useEffect(() => {
     if (isBothReady && localStream && role === 'expert' && !hasOfferedRef.current) {
+      console.log("[ActiveMeeting] Expert triggering offer creation...");
       hasOfferedRef.current = true;
       setStatus("Initiating Peer Connection...");
       createOffer().then(offer => {
-        if (offer) sendOffer(offer);
-        else hasOfferedRef.current = false;
+        if (offer) {
+          console.log("[ActiveMeeting] Offer created and sent");
+          sendOffer(offer);
+        } else {
+          console.error("[ActiveMeeting] Failed to create offer");
+          hasOfferedRef.current = false;
+        }
       });
     }
   }, [isBothReady, localStream, role, createOffer, sendOffer]);
