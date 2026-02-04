@@ -229,16 +229,10 @@ const ExpertAvailability = () => {
                     value={profile.availability.sessionDuration || 30}
                     onChange={(e) => {
                       const newDuration = Number(e.target.value);
-                      setProfile((p) => {
-                        const weekly = { ...p.availability.weekly };
-                        Object.keys(weekly).forEach(day => {
-                          weekly[day] = weekly[day].map(slot => ({
-                            ...slot,
-                            to: slot.from ? calculateEndTime(slot.from, newDuration) : slot.to
-                          }));
-                        });
-                        return { ...p, availability: { ...p.availability, sessionDuration: newDuration, weekly } };
-                      });
+                      setProfile((p) => ({
+                        ...p,
+                        availability: { ...p.availability, sessionDuration: newDuration }
+                      }));
                     }}
                   >
                     <option value={30}>30 minutes</option>

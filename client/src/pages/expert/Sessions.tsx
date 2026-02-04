@@ -1,7 +1,7 @@
 // src/pages/expert/Sessions.tsx
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Video, Clock, AlertCircle, Search, ChevronLeft, ChevronRight, X, Star, Timer as TimerIcon, Loader2, LayoutDashboard, User as UserIcon } from 'lucide-react';
+import { Video, Clock, AlertCircle, Search, ChevronLeft, ChevronRight, X, Star, Timer as TimerIcon, Loader2, LayoutDashboard, User as UserIcon, RefreshCw } from 'lucide-react';
 import { useAuth } from "../../context/AuthContext";
 import axios from '../../lib/axios';
 import { toast } from "sonner";
@@ -35,7 +35,8 @@ export default function Sessions() {
     const navigate = useNavigate();
     const { user } = useAuth();
     const [allSessions, setAllSessions] = useState<Session[]>([]);
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(false); // For actions like joining/reviewing
+    const [loadingSessions, setLoadingSessions] = useState(true); // For initial fetch
     const [currentTime, setCurrentTime] = useState(new Date());
 
     // --- FILTERS & PAGINATION STATE ---
@@ -68,24 +69,30 @@ export default function Sessions() {
         return () => clearInterval(timer);
     }, []);
 
-    useEffect(() => {
+    // Fetch Sessions Logic
+    const fetchSessions = async (showLoading = true) => {
         if (!currentUserId) return;
-        // Fetch sessions for this specific expert ID
-        axios.get(`/api/sessions/user/${currentUserId}/role/expert`)
-            .then(res => {
-                const data = res.data;
-                if (Array.isArray(data)) {
-                    // Sort by newest first
-                    const sorted = data.sort((a: any, b: any) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime());
-                    setAllSessions(sorted);
-                } else {
-                    setAllSessions([]);
-                }
-            })
-            .catch(err => {
-                console.error("Failed to fetch sessions", err);
-                toast.error("Could not load sessions");
-            });
+        if (showLoading) setLoadingSessions(true);
+        try {
+            const res = await axios.get(`/api/sessions/user/${currentUserId}/role/expert`);
+            const data = res.data;
+            if (Array.isArray(data)) {
+                // Sort by newest first
+                const sorted = data.sort((a: any, b: any) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime());
+                setAllSessions(sorted);
+            } else {
+                setAllSessions([]);
+            }
+        } catch (err) {
+            console.error("Failed to fetch sessions", err);
+            toast.error("Could not load sessions");
+        } finally {
+            if (showLoading) setLoadingSessions(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchSessions();
     }, [currentUserId]);
 
     // --- FILTER LOGIC ---
@@ -255,12 +262,33 @@ export default function Sessions() {
                                             {status.charAt(0).toUpperCase() + status.slice(1)}
                                         </button>
                                     ))}
+                                    <button
+                                        onClick={() => fetchSessions(true)}
+                                        className="p-1 px-2 rounded-full border border-gray-200 bg-white hover:bg-gray-50 text-gray-500 hover:text-blue-600 transition-colors"
+                                        title="Refresh Sessions"
+                                        disabled={loadingSessions}
+                                    >
+                                        <RefreshCw className={`w-3.5 h-3.5 ${loadingSessions ? 'animate-spin' : ''}`} />
+                                    </button>
                                 </div>
                             </div>
 
                             {/* List */}
                             <div className="flex-1 overflow-y-auto">
-                                {currentSessions.length > 0 ? (
+                                {loadingSessions ? (
+                                    <div className="divide-y divide-gray-100">
+                                        {[1, 2, 3, 4, 5].map((i) => (
+                                            <div key={i} className="p-4 animate-pulse flex flex-col gap-2">
+                                                <div className="flex justify-between items-center">
+                                                    <div className="h-4 bg-gray-200 rounded w-1/3"></div>
+                                                    <div className="h-4 bg-gray-200 rounded w-16"></div>
+                                                </div>
+                                                <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                                                <div className="h-3 bg-gray-200 rounded w-1/4 mt-1"></div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : currentSessions.length > 0 ? (
                                     <div className="divide-y divide-gray-100">
                                         {currentSessions.map(session => {
                                             // Auto-select first session if none selected

@@ -83,7 +83,7 @@ const BookSessionPage = () => {
   const sessionPrice = overridePrice ? overridePrice : (profile?.price || 0);
   // Use Expert's Level & Duration
   const [expertLevel, setExpertLevel] = useState(existingProfile?.level || "Intermediate");
-  const [sessionDuration, setSessionDuration] = useState<number>(existingProfile?.availability?.sessionDuration || 30);
+  const [sessionDuration, setSessionDuration] = useState<number>(Number(existingProfile?.availability?.sessionDuration) || 30);
   const [calculatedPrice, setCalculatedPrice] = useState<number>(0);
 
   // LinkedIn-style Profile Header
@@ -170,7 +170,7 @@ const BookSessionPage = () => {
 
 
   const [currentMonth, setCurrentMonth] = useState(new Date());
-  const [selectedDate, setSelectedDate] = useState(new Date().getDate() - 1); // This logic might need adj if switching months.
+  const [selectedDate, setSelectedDate] = useState(0); // Default to first available date (Today)
   // Better: selectedDate as index is tricky with switching months. 
   // Let's keep selectedDate as index of 'dates' array but reset it on month change.
 
@@ -256,7 +256,18 @@ const BookSessionPage = () => {
     const year = currentMonth.getFullYear();
     const month = currentMonth.getMonth();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
-    return Array.from({ length: daysInMonth }, (_, i) => new Date(year, month, i + 1));
+    const allDates = Array.from({ length: daysInMonth }, (_, i) => new Date(year, month, i + 1));
+
+    // Filter out past dates for the current month
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    return allDates.filter(date => {
+      // If it's a future month, show all days
+      if (date.getMonth() > today.getMonth() || date.getFullYear() > today.getFullYear()) return true;
+      // If it's current month, show only today onwards
+      return date >= today;
+    });
   }, [currentMonth]);
 
   const nextMonth = () => {
@@ -338,17 +349,15 @@ const BookSessionPage = () => {
         endMinutes += 24 * 60;
       }
 
-      while (currentMinutes + sessionDuration <= endMinutes) {
-        // Validation: Don't show past slots for "Today"
+      const duration = Number(sessionDuration);
+      console.log(`[Debug] Checking range ${range.from}-${range.to} (${currentMinutes}-${endMinutes}) with duration ${duration}`);
+
+      while (currentMinutes + duration <= endMinutes) {
+        // Validation: Mark past slots as unavailable instead of hiding them
         const now = new Date();
         const isToday = date.toDateString() === now.toDateString();
         const currentTimeMinutes = now.getHours() * 60 + now.getMinutes();
-
-        // Show all future slots, including those starting right now
-        if (isToday && currentMinutes < currentTimeMinutes) {
-          currentMinutes += sessionDuration;
-          continue;
-        }
+        const isPast = isToday && currentMinutes < currentTimeMinutes;
 
         const slotStartMinutes = currentMinutes;
         const slotDate = new Date(date);
@@ -362,7 +371,7 @@ const BookSessionPage = () => {
 
           if (isNaN(sStart.getTime()) || isNaN(sEnd.getTime())) return false;
 
-          const slotEndMinutes = currentMinutes + sessionDuration;
+          const slotEndMinutes = currentMinutes + duration;
           const slotEndDate = new Date(date);
           slotEndDate.setHours(Math.floor(slotEndMinutes / 60), slotEndMinutes % 60, 0, 0);
 
@@ -370,13 +379,13 @@ const BookSessionPage = () => {
         });
 
         const slotStart = formatMinutesToTime(currentMinutes);
-        const slotEnd = formatMinutesToTime(currentMinutes + sessionDuration);
+        const slotEnd = formatMinutesToTime(currentMinutes + duration);
 
         generatedSlots.push({
           time: `${slotStart} - ${slotEnd}`,
-          available: !isBooked
+          available: !isBooked && !isPast
         });
-        currentMinutes += sessionDuration;
+        currentMinutes += duration;
       }
     });
 
@@ -620,7 +629,8 @@ const BookSessionPage = () => {
         >
           {dates.map((date, index) => {
             const isToday = new Date().toDateString() === date.toDateString();
-            const isPast = !isToday && date < new Date() && date.getDate() !== new Date().getDate();
+            // isPast is no longer needed in the loop as we filtered 'dates' array, but let's keep logic clean
+            const isPast = false;
 
             return (
               <button
@@ -663,7 +673,7 @@ const BookSessionPage = () => {
       </div>
 
       {/* Slots Grid */}
-      <div className="grid grid-cols-2 gap-2 max-h-[300px] overflow-y-auto pr-1">
+      <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-[400px] overflow-y-auto pr-1">
         {currentSlots.length > 0 ? (
           currentSlots.map((slot, index) => (
             <button
