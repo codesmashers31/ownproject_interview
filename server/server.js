@@ -45,6 +45,7 @@ const allowedOrigins = [
   "http://localhost:5174",
   "https://interviewmock.vercel.app",
   "https://ownproject-interview.vercel.app", // Added new Vercel deployment
+  "https://interviewmock.onrender.com", // Added Render deployment
   process.env.CLIENT_URL,
 ].filter(Boolean);
 
