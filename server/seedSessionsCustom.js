@@ -19,13 +19,16 @@ const seedSessions = async () => {
         console.log(`Using Candidate ID: ${candidateId}`);
 
         // 3. Create 5 Sessions
-        // Start from 19:45 IST today (which is approx ~14:15 UTC if user is in +5:30)
-        // Current local time is 19:33. 19:45 is in 12 mins.
-        const baseTime = new Date("2026-02-03T19:45:00+05:30");
+        // Start from 5 mins in the future from NOW
+        const now = new Date();
+        const baseTime = new Date(now.getTime() + 5 * 60000); // Start 5 mins from now
         const sessions = [];
 
+        // Use CLIENT_URL from env or fallback to Vercel/Localhost
+        const clientUrl = process.env.CLIENT_URL || "https://ownproject-interview.vercel.app";
+
         for (let i = 0; i < 5; i++) {
-            const startTime = new Date(baseTime.getTime() + i * 15 * 60000); // +15 mins each
+            const startTime = new Date(baseTime.getTime() + i * 45 * 60000); // +45 mins each (sequential)
             const endTime = new Date(startTime.getTime() + 45 * 60000); // 45 min duration
 
             const session = new Session({
@@ -51,7 +54,7 @@ const seedSessions = async () => {
             console.log(`\n${i + 1}. [${s.status.toUpperCase()}] ${s.topics[0]}`);
             console.log(`   ID: ${s.sessionId}`);
             console.log(`   Time (Local): ${s.startTime.toLocaleString()}`);
-            console.log(`   Link: http://localhost:5173/live-meeting?meetingId=${s.sessionId}`);
+            console.log(`   Link: ${clientUrl}/live-meeting?meetingId=${s.sessionId}`);
         });
 
         process.exit(0);

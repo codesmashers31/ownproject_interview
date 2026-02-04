@@ -49,6 +49,7 @@ const allowedOrigins = [
   "https://ownproject-interview.vercel.app",
   "https://www.ownproject-interview.vercel.app",
   "https://interviewmock.onrender.com",
+  "https://ownproject-interview.onrender.com", // Corrected Render URL
   process.env.CLIENT_URL,
 ].filter(Boolean);
 
