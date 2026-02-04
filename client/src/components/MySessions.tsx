@@ -358,11 +358,19 @@ const MySessions = () => {
               <div className="space-y-3">
                 <div className="flex justify-between items-center">
                   <span className="text-sm font-medium text-gray-600">Completed</span>
-                  <span className="text-sm font-bold text-gray-900">{stats.completed}</span>
+                  {loading ? (
+                    <div className="h-5 w-8 bg-blue-100/50 animate-pulse rounded"></div>
+                  ) : (
+                    <span className="text-sm font-bold text-gray-900">{stats.completed}</span>
+                  )}
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-sm font-medium text-gray-600">Upcoming</span>
-                  <span className="text-sm font-bold text-gray-900">{stats.upcoming}</span>
+                  {loading ? (
+                    <div className="h-5 w-8 bg-blue-100/50 animate-pulse rounded"></div>
+                  ) : (
+                    <span className="text-sm font-bold text-gray-900">{stats.upcoming}</span>
+                  )}
                 </div>
               </div>
             </div>
@@ -376,9 +384,9 @@ const MySessions = () => {
               <div className="space-y-8 animate-fadeIn">
                 {/* Stats Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <StatCard label="Total Sessions" value={stats.completed + stats.upcoming} icon={<Video className="w-5 h-5 text-white" />} color="bg-blue-500" />
-                  <StatCard label="Certificates" value={stats.certifications} icon={<Award className="w-5 h-5 text-white" />} color="bg-purple-500" />
-                  <StatCard label="Reports" value={stats.reports} icon={<FileText className="w-5 h-5 text-white" />} color="bg-emerald-500" />
+                  <StatCard label="Total Sessions" value={stats.completed + stats.upcoming} icon={<Video className="w-5 h-5 text-white" />} color="bg-blue-500" loading={loading} />
+                  <StatCard label="Certificates" value={stats.certifications} icon={<Award className="w-5 h-5 text-white" />} color="bg-purple-500" loading={loading} />
+                  <StatCard label="Reports" value={stats.reports} icon={<FileText className="w-5 h-5 text-white" />} color="bg-emerald-500" loading={loading} />
                 </div>
 
                 {/* Recent Activity (Subset of sessions) */}
@@ -579,12 +587,16 @@ const MySessions = () => {
 
 // --- Sub-Components ---
 
-function StatCard({ label, value, icon, color }: { label: string, value: number, icon: any, color: string }) {
+function StatCard({ label, value, icon, color, loading }: { label: string, value: number, icon: any, color: string, loading?: boolean }) {
   return (
     <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-200 flex items-center justify-between">
       <div>
         <p className="text-gray-500 text-xs font-bold uppercase tracking-wider">{label}</p>
-        <p className="text-2xl font-black text-gray-900 mt-1">{value}</p>
+        {loading ? (
+          <div className="h-8 w-12 bg-gray-100 animate-pulse rounded mt-1"></div>
+        ) : (
+          <p className="text-2xl font-black text-gray-900 mt-1">{value}</p>
+        )}
       </div>
       <div className={`w-10 h-10 rounded-xl flex items-center justify-center shadow-md ${color}`}>
         {icon}

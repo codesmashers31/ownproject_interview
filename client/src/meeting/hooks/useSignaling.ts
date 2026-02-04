@@ -65,7 +65,7 @@ export function useSignaling({
 
         // Initialize Socket
         socketRef.current = io(SIGNALING_SERVER_URL, {
-            transports: ['websocket'],
+            transports: ['polling', 'websocket'],
         });
 
         const socket = socketRef.current;
