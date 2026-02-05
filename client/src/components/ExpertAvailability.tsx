@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import axios from '../lib/axios';
 import { toast } from "sonner";
 import { PrimaryButton } from '../pages/ExpertDashboard';
-import { X, Copy, Plus, Clock, Calendar as CalendarIcon, CheckCircle2, AlertCircle } from "lucide-react";
+import { X, Copy, Plus, Clock, Calendar as CalendarIcon, CheckCircle2 } from "lucide-react";
 
 interface Slot {
   from: string;
