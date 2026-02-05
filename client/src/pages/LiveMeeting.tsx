@@ -485,6 +485,9 @@ export default function LiveMeetingPage() {
   const meetingId = searchParams.get('meetingId');
   const role = user?.role || location.state?.role;
 
+  // DEBUG: Inspect user object structure
+  console.log('[LiveMeeting] Current User Object:', user);
+
   useEffect(() => {
     if (!meetingId) {
       toast.error("Invalid Meeting ID");
