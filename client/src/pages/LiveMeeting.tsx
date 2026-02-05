@@ -498,7 +498,7 @@ export default function LiveMeetingPage() {
     <ActiveMeeting
       meetingId={meetingId}
       role={role}
-      userId={user._id}
+      userId={user.id || user._id || user.userId}
       onLeave={() => navigate(role === 'expert' ? '/dashboard/sessions' : '/my-sessions')}
       sessionData={location.state}
     />
