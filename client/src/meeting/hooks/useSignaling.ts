@@ -61,18 +61,32 @@ export function useSignaling({
             return;
         }
 
-        console.log('[useSignaling] Media Ready! Connecting to socket...');
+        console.log('[useSignaling] Connecting to socket at:', SIGNALING_SERVER_URL);
 
-        // Initialize Socket
+        // Initialize Socket with debug options
         socketRef.current = io(SIGNALING_SERVER_URL, {
             transports: ['polling', 'websocket'],
+            reconnectionAttempts: 5,
         });
 
         const socket = socketRef.current;
 
         socket.on('connect', () => {
-            console.log('[useSignaling] Connected to socket. Joining room...');
+            console.log('[useSignaling] ✅ SOCKET CONNECTED. ID:', socket.id);
+            console.log('[useSignaling] Joining room:', { meetingId, role, userId });
             socket.emit('join-room', { meetingId, role, userId });
+        });
+
+        socket.on('connect_error', (err) => {
+            console.error('[useSignaling] ❌ SOCKET CONNECTION ERROR:', err.message, err);
+        });
+
+        socket.on('disconnect', (reason) => {
+            console.warn('[useSignaling] ⚠️ SOCKET DISCONNECTED:', reason);
+        });
+
+        socket.on('error', (err) => {
+            console.error('[useSignaling] ❌ SOCKET LOGIC ERROR:', err);
         });
 
         // Use wrapper functions that call the current ref
